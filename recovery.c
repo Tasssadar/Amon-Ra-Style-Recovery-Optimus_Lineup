@@ -1599,29 +1599,26 @@ show_menu_other()
 				break;
 
 		case ITEM_OTHER_BATTERY_LEVEL:
-				ui_print("Battery level: ");
-                ui_print(get_battery_level());
-                ui_print("%\n");
+				ui_print("Battery level: %s%%\n", get_battery_level());
 				break;
 
-            	case ITEM_OTHER_DANGER_WIPE_SYSTEM:
-                    ui_clear_key_queue();
-		    ui_print("\nWipe /system");
-                    ui_print("\nDangerous & Irreversible!!!\n");
-		    ui_print("\nOnly Used to Fix Corrupted Partition!!!\n");
-		    ui_print("\nPress Menu to confirm,");
-                    ui_print("\nany other key to abort.\n\n");
-                    int confirm_wipe_mysys = ui_wait_key();
-                    if (confirm_wipe_mysys == KEY_MENU) {
-                        erase_root("SYSTEM:");
-                        ui_print("/system wipe complete!\n\n");
-                    } else {
-                        ui_print("/system wipe aborted!\n\n");
-                    }
-                    if (!ui_text_visible()) return;
-                    break;
-		
-
+        case ITEM_OTHER_DANGER_WIPE_SYSTEM:
+                ui_clear_key_queue();
+		        ui_print("\nWipe /system");
+                ui_print("\nDangerous & Irreversible!!!\n");
+		        ui_print("\nOnly Used to Fix Corrupted Partition!!!\n");
+		        ui_print("\nPress Menu to confirm,");
+                ui_print("\nany other key to abort.\n\n");
+                int confirm_wipe_mysys = ui_wait_key();
+                if (confirm_wipe_mysys == KEY_MENU) {
+                    erase_root("SYSTEM:");
+                    ui_print("/system wipe complete!\n\n");
+                } else {
+                    ui_print("/system wipe aborted!\n\n");
+                }
+                if (!ui_text_visible())
+                    return;
+                break;
 		}
 
             // if we didn't return from this function to reboot, show
@@ -2051,9 +2048,7 @@ main(int argc, char **argv)
     ui_print("Build: ");
     ui_print(prop_value);
     ui_print("\n");
-    ui_print("Battery level: ");
-    ui_print(get_battery_level());
-    ui_print("%\n");
+    ui_print("Battery level: %s%%\n", get_battery_level());
 
     get_args(&argc, &argv);
     
