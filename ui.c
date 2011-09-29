@@ -108,16 +108,16 @@ static volatile char key_pressed[KEY_MAX + 1];
 static void draw_background_locked(gr_surface icon)
 {
     gPagesIdentical = 0;
-    gr_color(0, 0, 0, 255);
+    gr_color(181, 181, 181, 255);
     gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
-    if (icon) {
+/*    if (icon) {
         int iconWidth = gr_get_width(icon);
         int iconHeight = gr_get_height(icon);
         int iconX = (gr_fb_width() - iconWidth) / 2;
         int iconY = (gr_fb_height() - iconHeight) / 2;
         gr_blit(icon, 0, 0, iconWidth, iconHeight, iconX, iconY);
-    }
+    }*/
 }
 
 // Draw the progress bar (if any) on the screen.  Does not flip pages.
@@ -134,7 +134,7 @@ static void draw_progress_locked()
     int dy = (3*gr_fb_height() + iconHeight - 2*height)/4;
 
     // Erase behind the progress bar (in case this was a progress-only update)
-    gr_color(0, 0, 0, 255);
+    gr_color(255, 255, 255, 255);
     gr_fill(dx, dy, width, height);
 
     if (gProgressBarType == PROGRESSBAR_TYPE_NORMAL) {
@@ -169,8 +169,8 @@ static void draw_text_line(int row, const char* t) {
 }
 
 // HTC
-#define MENU_TEXT_COLOR 64, 96, 255, 255
-#define NORMAL_TEXT_COLOR 255, 255, 0, 255
+#define MENU_TEXT_COLOR 0, 0, 0, 255
+#define NORMAL_TEXT_COLOR 168, 0, 0, 255
 #define SELECTED_TEXT_COLOR 255, 255, 255, 255
 
 /* 
@@ -200,7 +200,7 @@ static void draw_screen_locked(void)
     draw_progress_locked();
 
     if (show_text) {
-        gr_color(0, 0, 0, 160);
+        gr_color(181, 181, 181, 160);
         gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
         int i = 0;

@@ -31,5 +31,5 @@ wipe_rotate_settings();
 void 
 key_logger_test();
 
-//void check_my_battery_level();
+char *get_battery_level();
 

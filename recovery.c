@@ -905,13 +905,13 @@ show_menu_nandroid()
 		{
 
 
-				if (items[i]=="- [X] sd-ext") strcat(nandroid_command, " -e");
-				if (items[i]=="- [X] .android_secure") strcat(nandroid_command, " -a");
-				if (items[i]=="- [ ] recovery") strcat(nandroid_command, " --norecovery");
-				if (items[i]=="- [ ] boot") strcat(nandroid_command, " --noboot");
-				if (items[i]=="- [ ] data") strcat(nandroid_command, " --nodata");
-				if (items[i]=="- [ ] system") strcat(nandroid_command, " --nosystem");
-				if (items[i]=="- [ ] cache") strcat(nandroid_command, " --nocache");
+				if (strcmp(items[i], "- [X] sd-ext") == 0) strcat(nandroid_command, " -e");
+				if (strcmp(items[i], "- [X] .android_secure") == 0) strcat(nandroid_command, " -a");
+				if (strcmp(items[i], "- [ ] recovery") == 0) strcat(nandroid_command, " --norecovery");
+				if (strcmp(items[i], "- [ ] boot") == 0) strcat(nandroid_command, " --noboot");
+				if (strcmp(items[i], "- [ ] data") == 0) strcat(nandroid_command, " --nodata");
+				if (strcmp(items[i], "- [ ] system") == 0) strcat(nandroid_command, " --nosystem");
+				if (strcmp(items[i], "- [ ] cache") == 0) strcat(nandroid_command, " --nocache");
                 	        
 		i++;	
 		}
@@ -1534,14 +1534,14 @@ show_menu_other()
 #define ITEM_OTHER_FIXUID 0
 #define ITEM_OTHER_RE2SD  1
 #define ITEM_OTHER_KEY_TEST 2
-//#define ITEM_OTHER_BATTERY_LEVEL 3
-//#define ITEM_OTHER_DANGER_WIPE_SYSTEM 3 
+#define ITEM_OTHER_BATTERY_LEVEL 3
+#define ITEM_OTHER_DANGER_WIPE_SYSTEM 4
 
     static char* items[] = { "- Fix apk uid mismatches",
 			     "- Move recovery.log to SD",
                              "- Debugging Test Key Codes",
-			     //"- Check Battery Level",
-			     //"- DANGEROUS!! Wipe /system",
+			     "- Check Battery Level",
+			     "- DANGEROUS!! Wipe /system",
 			     NULL };
 
     ui_start_menu(headers, items);
@@ -1597,14 +1597,14 @@ show_menu_other()
 		case ITEM_OTHER_KEY_TEST:
 				key_logger_test();
 				break;
-/*
-		case ITEM_OTHER_BATTERY_LEVEL:
-				check_my_battery_level();
-				break;
-*/
 
-		/*Commented out code too dangerous*/
-   /*         	case ITEM_OTHER_DANGER_WIPE_SYSTEM:
+		case ITEM_OTHER_BATTERY_LEVEL:
+				ui_print("Battery level: ");
+                ui_print(get_battery_level());
+                ui_print("%\n");
+				break;
+
+            	case ITEM_OTHER_DANGER_WIPE_SYSTEM:
                     ui_clear_key_queue();
 		    ui_print("\nWipe /system");
                     ui_print("\nDangerous & Irreversible!!!\n");
@@ -1620,7 +1620,6 @@ show_menu_other()
                     }
                     if (!ui_text_visible()) return;
                     break;
-   */
 		
 
 		}
@@ -2049,9 +2048,12 @@ main(int argc, char **argv)
     property_get("ro.modversion", &prop_value[0], "not set");
  
     ui_init();
-    ui_print("Build : ");
+    ui_print("Build: ");
     ui_print(prop_value);
     ui_print("\n");
+    ui_print("Battery level: ");
+    ui_print(get_battery_level());
+    ui_print("%\n");
 
     get_args(&argc, &argv);
     
