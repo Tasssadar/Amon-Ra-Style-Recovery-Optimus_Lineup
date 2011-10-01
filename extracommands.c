@@ -94,10 +94,21 @@ void run_script(char *str1,char *str2,char *str3,char *str4,char *str5,char *str
                 	        fprintf(stderr, str4, strerror(errno));
                 	        _exit(-1);
                 	}
+
 			int status;
+            char state = 0;
+            ui_print("-");
 			while (waitpid(pid, &status, WNOHANG) == 0) {
-				ui_print(".");
-               		        sleep(1);
+                switch(state)
+                {
+                    case 0: ui_print("\b-"); break;
+                    case 1: ui_print("\b\\"); break;
+                    case 2: ui_print("\b|"); break;
+                    case 3: ui_print("\b/"); break;
+                }
+                ++state;
+                if(state > 3) state = 0;
+                sleep(1);
 			}
                 	ui_print("\n");
 			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {

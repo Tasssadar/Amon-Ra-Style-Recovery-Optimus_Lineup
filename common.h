@@ -18,6 +18,7 @@
 #define RECOVERY_COMMON_H
 
 #include <stdio.h>
+#include <pthread.h>
 
 // Initialize the graphics system.
 void ui_init();
@@ -78,6 +79,8 @@ void ui_show_indeterminate_progress();
 
 // Hide and reset the progress bar.
 void ui_reset_progress();
+
+static pthread_mutex_t gOutputFileRemove = PTHREAD_MUTEX_INITIALIZER;
 
 #define LOGE(...) ui_print("E:" __VA_ARGS__)
 #define LOGW(...) fprintf(stderr, "W:" __VA_ARGS__)

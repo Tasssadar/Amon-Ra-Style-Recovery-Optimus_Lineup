@@ -433,16 +433,30 @@ choose_nandroid_file(const char *nandroid_folder)
 
                             pid_t pid = fork();
                             if (pid == 0) {
-                                char *args[] = {"/sbin/sh", "-c", nandroid_command , "1>&2", NULL};
+                                strcat(nandroid_command, " > /tmp/output.txt");
+                                pthread_mutex_lock(&gOutputFileRemove);
+                                __system("rm /tmp/output.txt");
+                                pthread_mutex_unlock(&gOutputFileRemove);
+                                char *args[] = {"/sbin/sh", "-c", nandroid_command , " > /tmp/output.txt", NULL};
                                 execv("/sbin/sh", args);
                                 fprintf(stderr, "\nCan't run nandroid-mobile.sh\n(%s)\n", strerror(errno));
         	                _exit(-1);
                             }
 
                             int status3;
-
-                            while (waitpid(pid, &status3, WNOHANG) == 0) {
-                                ui_print(".");
+                            char state = 0;
+                            ui_print("-");
+                            while (waitpid(pid, &status3, WNOHANG) == 0)
+                            {
+                                switch(state)
+                                {
+                                    case 0: ui_print("\b-"); break;
+                                    case 1: ui_print("\b\\"); break;
+                                    case 2: ui_print("\b|"); break;
+                                    case 3: ui_print("\b/"); break;
+                                }
+                                ++state;
+                                if(state > 3) state = 0;
                                 sleep(1);
                             } 
                             ui_print("\n");
@@ -915,7 +929,10 @@ show_menu_nandroid()
                 	        
 		i++;	
 		}
-
+            strcat(nandroid_command, " > /tmp/output.txt");
+            pthread_mutex_lock(&gOutputFileRemove);
+            __system("rm /tmp/output.txt");
+            pthread_mutex_unlock(&gOutputFileRemove);
 			run_script("\nCreate Nandroid backup?",
 				   "\nPerforming backup : ",
 				   nandroid_command,
@@ -1629,7 +1646,9 @@ show_menu_other()
                 ui_print("Mounting SDEXT...\n");
                 ensure_root_path_mounted("SDEXT:");
                 ui_print("Running a2sd reinstall..\n");
+                pthread_mutex_lock(&gOutputFileRemove);
                 __system("rm /tmp/output.txt");
+                pthread_mutex_unlock(&gOutputFileRemove);
                 __system("/system/bin/a2sd reinstall > /tmp/output.txt");
                 break;
 		}

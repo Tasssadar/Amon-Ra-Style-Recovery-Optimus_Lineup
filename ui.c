@@ -389,10 +389,12 @@ static void *output_file_thread(void *cookie)
     char buff[10000];
     while(1)
     {      
+        pthread_mutex_lock(&gOutputFileRemove);
         out = fopen("/tmp/output.txt", "r");
         if(!out)
         {
             itr = 0;
+            pthread_mutex_unlock(&gOutputFileRemove);
             usleep(50000);
             continue;
         }
@@ -401,11 +403,13 @@ static void *output_file_thread(void *cookie)
         {
             itr = ftell(out);
             fclose(out);
+            pthread_mutex_unlock(&gOutputFileRemove);
             ui_print(buff);
         }
         else
         {
             fclose(out);
+            pthread_mutex_unlock(&gOutputFileRemove);
             usleep(50000);
         }
     }
@@ -531,6 +535,15 @@ void ui_print(const char *fmt, ...)
     if (text_rows > 0 && text_cols > 0) {
         char *ptr;
         for (ptr = buf; *ptr != '\0'; ++ptr) {
+// backspace support
+            if(*ptr == '\b')
+            {
+                --text_col;
+                if(text_col < 0)
+                    text_col = 0;
+                continue;
+            }
+// backspace support
             if (*ptr == '\n' || text_col >= text_cols) {
                 text[text_row][text_col] = '\0';
                 text_col = 0;
