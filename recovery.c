@@ -1536,12 +1536,14 @@ show_menu_other()
 #define ITEM_OTHER_KEY_TEST 2
 #define ITEM_OTHER_BATTERY_LEVEL 3
 #define ITEM_OTHER_DANGER_WIPE_SYSTEM 4
+#define ITEM_OTHER_RUN_A2SD_REINSTALL 5
 
     static char* items[] = { "- Fix apk uid mismatches",
 			     "- Move recovery.log to SD",
                              "- Debugging Test Key Codes",
 			     "- Check Battery Level",
 			     "- DANGEROUS!! Wipe /system",
+                 "- Run a2sd reinstall",
 			     NULL };
 
     ui_start_menu(headers, items);
@@ -1618,6 +1620,17 @@ show_menu_other()
                 }
                 if (!ui_text_visible())
                     return;
+                break;
+            case ITEM_OTHER_RUN_A2SD_REINSTALL:
+                ui_print("Mounting SYSTEM\n");
+                ensure_root_path_mounted("SYSTEM:");
+                ui_print("Mounting DATA\n");
+                ensure_root_path_mounted("DATA:");
+                ui_print("Mounting SDEXT\n");
+                ensure_root_path_mounted("SDEXT:");
+                ui_print("Running a2sd reinstall..\n");
+                __system("rm /tmp/output.txt");
+                __system("/system/bin/a2sd reinstall > /tmp/output.txt");
                 break;
 		}
 
@@ -2045,9 +2058,7 @@ main(int argc, char **argv)
     property_get("ro.modversion", &prop_value[0], "not set");
  
     ui_init();
-    ui_print("Build: ");
-    ui_print(prop_value);
-    ui_print("\n");
+    ui_print("Build: %s\n", prop_value);
     ui_print("Battery level: %s%%\n", get_battery_level());
 
     get_args(&argc, &argv);

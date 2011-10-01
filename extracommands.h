@@ -1,4 +1,4 @@
-extern int signature_check_enabled;
+static int signature_check_enabled = 1;
 
 void
 toggle_signature_check();

@@ -111,7 +111,7 @@ static void draw_background_locked(gr_surface icon)
     gr_color(181, 181, 181, 255);
     gr_fill(0, 0, gr_fb_width(), gr_fb_height());
 
-/*    if (icon) {
+    /*if (icon) {
         int iconWidth = gr_get_width(icon);
         int iconHeight = gr_get_height(icon);
         int iconX = (gr_fb_width() - iconWidth) / 2;
@@ -381,6 +381,33 @@ static void *input_thread(void *cookie)
     return NULL;
 }
 
+// Reads output from file and prints it to the screen. Used in A2SD reinstall cmd
+static void *output_file_thread(void *cookie)
+{
+    FILE *out = NULL;
+    int itr = 0;
+    char buff[10000];
+    while(1)
+    {
+        usleep(50000);        
+        out = fopen("/tmp/output.txt", "r");
+        if(!out)
+        {
+            itr = 0;
+            continue;
+        }
+        fseek(out, itr, SEEK_SET);
+        if(fgets(buff, 10000, out))
+        {
+            itr = ftell(out);
+            fclose(out);
+            ui_print(buff);
+        }else
+            fclose(out);
+    }
+    return NULL;
+}
+
 void ui_init(void)
 {
     gr_init();
@@ -406,6 +433,7 @@ void ui_init(void)
     pthread_t t;
     pthread_create(&t, NULL, progress_thread, NULL);
     pthread_create(&t, NULL, input_thread, NULL);
+    pthread_create(&t, NULL, output_file_thread, NULL);
 }
 
 char *ui_copy_image(int icon, int *width, int *height, int *bpp) {
@@ -486,10 +514,10 @@ void ui_reset_progress()
 
 void ui_print(const char *fmt, ...)
 {
-    char buf[256];
+    char buf[5000];
     va_list ap;
     va_start(ap, fmt);
-    vsnprintf(buf, 256, fmt, ap);
+    vsnprintf(buf, 5000, fmt, ap);
     va_end(ap);
 
     fputs(buf, stderr);

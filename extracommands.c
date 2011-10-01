@@ -48,7 +48,7 @@ To handle formatting non yaffs2 partitions like the ext3 /data & /cache on Incre
 
 #include <sys/limits.h>
 
-int signature_check_enabled = 1;
+//signature_check_enabled = 1;
 
 void toggle_signature_check()
 {
@@ -309,14 +309,19 @@ char *get_battery_level()
     FILE *cap = fopen("/sys/class/power_supply/battery/capacity", "r");
     if(cap)
     {
-        char *str = (char*) malloc(3);
-        if(fgets(str, 3, cap))
+        char *str = (char*) malloc(4);
+        char i = 0;
+        for(; i < 4; ++i) str[i] = 0;
+        if(fgets(str, 4, cap))
         {
             fclose(cap);
+            for(i = 0; i < 4; ++i)
+                if(str[i] == '\n')
+                    str[i] = 0;
 	        return str;            
         }
-        fclose(cap);
         free(str);
+        fclose(cap);
     }
     return "N/A";
 }
