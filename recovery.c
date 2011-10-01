@@ -1534,14 +1534,14 @@ show_menu_other()
 #define ITEM_OTHER_FIXUID 0
 #define ITEM_OTHER_RE2SD  1
 #define ITEM_OTHER_KEY_TEST 2
-#define ITEM_OTHER_BATTERY_LEVEL 3
+#define ITEM_OTHER_BATTERY_INFO 3
 #define ITEM_OTHER_DANGER_WIPE_SYSTEM 4
 #define ITEM_OTHER_RUN_A2SD_REINSTALL 5
 
     static char* items[] = { "- Fix apk uid mismatches",
 			     "- Move recovery.log to SD",
                              "- Debugging Test Key Codes",
-			     "- Check Battery Level",
+			     "- Show battery info",
 			     "- DANGEROUS!! Wipe /system",
                  "- Run a2sd reinstall",
 			     NULL };
@@ -1600,8 +1600,8 @@ show_menu_other()
 				key_logger_test();
 				break;
 
-		case ITEM_OTHER_BATTERY_LEVEL:
-				ui_print("Battery level: %s%%\n", get_battery_level());
+		case ITEM_OTHER_BATTERY_INFO:
+				ui_print(get_battery_info());
 				break;
 
         case ITEM_OTHER_DANGER_WIPE_SYSTEM:
@@ -1622,11 +1622,11 @@ show_menu_other()
                     return;
                 break;
             case ITEM_OTHER_RUN_A2SD_REINSTALL:
-                ui_print("Mounting SYSTEM\n");
+                ui_print("Mounting SYSTEM...\n");
                 ensure_root_path_mounted("SYSTEM:");
-                ui_print("Mounting DATA\n");
+                ui_print("Mounting DATA...\n");
                 ensure_root_path_mounted("DATA:");
-                ui_print("Mounting SDEXT\n");
+                ui_print("Mounting SDEXT...\n");
                 ensure_root_path_mounted("SDEXT:");
                 ui_print("Running a2sd reinstall..\n");
                 __system("rm /tmp/output.txt");
@@ -2059,7 +2059,7 @@ main(int argc, char **argv)
  
     ui_init();
     ui_print("Build: %s\n", prop_value);
-    ui_print("Battery level: %s%%\n", get_battery_level());
+    ui_print(get_battery_info());
 
     get_args(&argc, &argv);
     

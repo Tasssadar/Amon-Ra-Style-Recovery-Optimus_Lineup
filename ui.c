@@ -388,12 +388,12 @@ static void *output_file_thread(void *cookie)
     int itr = 0;
     char buff[10000];
     while(1)
-    {
-        usleep(50000);        
+    {      
         out = fopen("/tmp/output.txt", "r");
         if(!out)
         {
             itr = 0;
+            usleep(50000);
             continue;
         }
         fseek(out, itr, SEEK_SET);
@@ -402,8 +402,12 @@ static void *output_file_thread(void *cookie)
             itr = ftell(out);
             fclose(out);
             ui_print(buff);
-        }else
+        }
+        else
+        {
             fclose(out);
+            usleep(50000);
+        }
     }
     return NULL;
 }

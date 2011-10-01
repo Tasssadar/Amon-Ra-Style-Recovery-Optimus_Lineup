@@ -303,25 +303,49 @@ void wipe_rotate_settings()
     ensure_root_path_unmounted("DATA:");
 }     
 
+char *read_from_file(char *file, int bufferSize)
+{
+    FILE *f = fopen(file, "r");
+    if(f)
+    {
+        char *str = (char*) malloc(bufferSize);
+        if(fgets(str, bufferSize, f))
+        {
+            fclose(f);
+	        return str;            
+        }
+        free(f);
+    }
+    return NULL;
+}
+
+char *read_from_file_imp(char *file, int bufferSize)
+{
+    char *txt = read_from_file(file, bufferSize);
+    if(txt == NULL)
+        return "NaN";
+
+    int i = 0;
+    //remove newline
+    for(; txt[i] != 0; ++i)
+        if(txt[i] == '\n')
+            txt[i] = 0;
+    return txt;
+}
 
 char *get_battery_level()
 {
-    FILE *cap = fopen("/sys/class/power_supply/battery/capacity", "r");
-    if(cap)
-    {
-        char *str = (char*) malloc(4);
-        char i = 0;
-        for(; i < 4; ++i) str[i] = 0;
-        if(fgets(str, 4, cap))
-        {
-            fclose(cap);
-            for(i = 0; i < 4; ++i)
-                if(str[i] == '\n')
-                    str[i] = 0;
-	        return str;            
-        }
-        free(str);
-        fclose(cap);
-    }
-    return "N/A";
+    return read_from_file_imp("/sys/class/power_supply/battery/capacity", 4);
+}
+
+char *get_battery_status()
+{
+    return read_from_file_imp("/sys/class/power_supply/battery/status", 50);
+}
+
+char *get_battery_info()
+{
+    char *info = (char*) malloc(512);
+    sprintf(info, "Battery level: %s%%\nBattery status: %s\n", get_battery_level(), get_battery_status());
+    return info;
 }

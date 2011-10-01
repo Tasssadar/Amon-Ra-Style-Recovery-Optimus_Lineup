@@ -31,5 +31,9 @@ wipe_rotate_settings();
 void 
 key_logger_test();
 
-char *get_battery_level();
+char *read_from_file(char *file, int bufferSize);
+char *read_from_file_imp(char *file, int bufferSize);
+inline char *get_battery_level();
+inline char *get_battery_status();
+char *get_battery_info();
 
