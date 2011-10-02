@@ -2078,7 +2078,6 @@ main(int argc, char **argv)
  
     ui_init();
     ui_print("Build: %s\n", prop_value);
-    ui_print(get_battery_info());
 
     get_args(&argc, &argv);
     

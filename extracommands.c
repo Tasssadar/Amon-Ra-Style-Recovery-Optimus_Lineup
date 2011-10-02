@@ -360,3 +360,23 @@ char *get_battery_info()
     sprintf(info, "Battery level: %s%%\nBattery status: %s\n", get_battery_level(), get_battery_status());
     return info;
 }
+
+char *get_info_bar()
+{
+    char *info = (char*) malloc(512);
+    uint time_div = time(0)%86400;
+    uint hours = time_div/3600;
+    char *batt_lvl = get_battery_level();
+    char *batt_status = get_battery_status();
+
+    static uint width = 0;
+    if(width == 0)
+        width = (gr_fb_width()/10);
+
+    uint lenght = width - (7 + (uint)strlen(batt_lvl) + (uint)strlen(batt_status) + ((hours > 9) ? 5 : 4));
+
+    sprintf(info, "Batt: %s%%, %s%*u:%02u", batt_lvl, batt_status, lenght, hours, (time_div/60)%60);
+    free(batt_lvl);
+    free(batt_status);
+    return info;
+}

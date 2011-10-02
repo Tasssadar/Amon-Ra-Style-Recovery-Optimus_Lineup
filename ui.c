@@ -27,6 +27,7 @@
 
 #include "common.h"
 #include "minui/minui.h"
+#include "extracommands.h"
 
 #define MAX_COLS 64
 #define MAX_ROWS 64
@@ -206,6 +207,7 @@ static void draw_screen_locked(void)
         int i = 0;
         int j = 0;
         int row = 0;
+        
         if (show_menu) {
 
             gr_color(MENU_TEXT_COLOR);
@@ -249,7 +251,12 @@ static void draw_screen_locked(void)
         gr_color(NORMAL_TEXT_COLOR);
 
 
-	row++;
+        //battery status
+        char *bar = get_info_bar();
+        draw_text_line(0, bar);
+        free(bar);
+
+	    row++;
         for (; row < text_rows; ++row) {
             draw_text_line(row, text[(row+text_top) % text_rows]);
         }
@@ -571,14 +578,14 @@ void ui_start_menu(char** headers, char** items) {
     if (text_rows > 0 && text_cols > 0) {
         for (i = 0; i < text_rows; ++i) {
             if (headers[i] == NULL) break;
-            strncpy(menu[i], headers[i], text_cols-1);
-            menu[i][text_cols-1] = '\0';
+            strncpy(menu[i+1], headers[i], text_cols-1);
+            menu[i+1][text_cols-1] = '\0';
         }
-        menu_top = i;
+        menu_top = ++i;
         for (; i < MENU_MAX_ROWS; ++i) {
             if (items[i-menu_top] == NULL) break;
             strncpy(menu[i], items[i-menu_top], text_cols-1);
-            menu[i][text_cols-1] = '\0';
+            menu[i][text_cols] = '\0';
         }
 
         menu_items = i - menu_top;
