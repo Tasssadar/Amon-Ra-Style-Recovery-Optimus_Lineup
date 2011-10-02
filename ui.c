@@ -202,7 +202,7 @@ static void draw_screen_locked(void)
 
     if (show_text) {
         gr_color(181, 181, 181, 160);
-        gr_fill(0, 0, gr_fb_width(), gr_fb_height());
+        gr_fill(0, CHAR_HEIGHT, gr_fb_width(), gr_fb_height());
 
         int i = 0;
         int j = 0;
@@ -248,15 +248,17 @@ static void draw_screen_locked(void)
                     gr_fb_width(), row*CHAR_HEIGHT+CHAR_HEIGHT/2+1);
         }
 
-        gr_color(NORMAL_TEXT_COLOR);
+        gr_color(0, 0, 0, 255);
+        gr_fill(0, 0, gr_fb_width(), CHAR_HEIGHT);
 
+        gr_color(NORMAL_TEXT_COLOR);
 
         //battery status
         char *bar = get_info_bar();
         draw_text_line(0, bar);
         free(bar);
 
-	    row++;
+        row++;
         for (; row < text_rows; ++row) {
             draw_text_line(row, text[(row+text_top) % text_rows]);
         }
