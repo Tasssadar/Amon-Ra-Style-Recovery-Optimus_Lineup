@@ -364,18 +364,23 @@ char *get_battery_info()
 char *get_info_bar()
 {
     char *info = (char*) malloc(512);
-    uint time_div = time(0)%86400;
-    uint hours = time_div/3600;
+    
     char *batt_lvl = get_battery_level();
     char *batt_status = get_battery_status();
+    time_t t = time(0);
+    struct tm * loctm = localtime(&t);
+    // Hack for CET time & daylight saving time
+    loctm->tm_hour += (loctm->tm_mon >= 3 && loctm->tm_mon < 10) ? 2 : 1;
+    if(loctm->tm_hour >= 24)
+        loctm->tm_hour -= 24;
 
     static uint width = 0;
     if(width == 0)
         width = (gr_fb_width()/10);
 
-    uint lenght = width - (7 + (uint)strlen(batt_lvl) + (uint)strlen(batt_status) + ((hours > 9) ? 5 : 4));
+    uint lenght = width - (12 + (uint)strlen(batt_lvl) + (uint)strlen(batt_status));
 
-    sprintf(info, "Batt: %s%%, %s%*u:%02u", batt_lvl, batt_status, lenght, hours, (time_div/60)%60);
+    sprintf(info, "Batt: %s%%, %s%*u:%02u", batt_lvl, batt_status, lenght, loctm->tm_hour, loctm->tm_min);
     free(batt_lvl);
     free(batt_status);
     return info;
