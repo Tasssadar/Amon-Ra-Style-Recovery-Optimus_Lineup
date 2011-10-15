@@ -41,8 +41,8 @@
 #include "minui/minui.h"
 #include "minzip/DirUtil.h"
 #include "roots.h"
-
 #include "extracommands.h"
+#include "multirom.h"
 
 static const struct option OPTIONS[] = {
   { "send_intent", required_argument, NULL, 's' },
@@ -1924,7 +1924,143 @@ show_menu_usb()
     }
 }
 
+static void
+show_menu_multirom()
+{
+    ui_print("Mounting SDEXT...\n");
+    ensure_root_path_mounted("SDEXT:");
+    DIR *multirom = opendir("/sd-ext/multirom");
+    if(!multirom)
+    {
+        ui_print("Could not find multirom folder!\n");
+        return;
+    }
+    closedir(multirom);
 
+    unsigned char active = 0;
+    DIR *rom_dir = opendir("/sd-ext/multirom/rom");
+    if(rom_dir)
+    {
+        active = 1;
+        closedir(rom_dir);
+    }
+
+    static char* headers[] = { "Choose item,",
+                   "or press BACK to return",
+                   "",
+                   NULL };
+
+// these constants correspond to elements of the items[] list.
+#define ITEM_MULTIROM_ACTIVATE_MOVE   0
+#define ITEM_MULTIROM_ACTIVATE_COPY   1
+
+#define ITEM_MULTIROM_DEACTIVATE_MOVE 0
+#define ITEM_MULTIROM_BACKUP          1
+#define ITEM_MULTIROM_ERASE           2
+
+
+    static char* items_disabled[] = { "- Activate (move from backup)",
+                                      "- Activate (copy from backup)",
+                                      NULL };
+    static char* items_enabled[] = { "- Deactivate (move to backup)",
+                                     "- Backup",
+                                     "- Erase current ROM",
+                                      NULL };
+
+    ui_start_menu(headers, active == 1 ? items_enabled : items_disabled);
+    int selected = 0;
+    int chosen_item = -1;
+
+    finish_recovery(NULL);
+    ui_reset_progress();
+    for (;;)
+    {
+        int key = ui_wait_key();
+        int alt = ui_key_pressed(KEY_LEFTALT) || ui_key_pressed(KEY_RIGHTALT);
+        int visible = ui_text_visible();
+
+        if (key == KEY_BACK)
+            break;
+        else if ((key == KEY_VOLUMEDOWN) && visible)
+        {
+            ++selected;
+            selected = ui_menu_select(selected);
+        }
+        else if ((key == KEY_VOLUMEUP) && visible)
+        {
+            --selected;
+            selected = ui_menu_select(selected);
+        }
+        else if ((key == KEY_MENU) && visible )
+            chosen_item = selected;
+
+        if (chosen_item >= 0)
+        {
+            // turn off the menu, letting ui_print() to scroll output
+            // on the screen.
+            ui_end_menu();
+
+            if(active == 0)
+            {
+                switch (chosen_item)
+                {
+                    case ITEM_MULTIROM_ACTIVATE_MOVE:
+                    case ITEM_MULTIROM_ACTIVATE_COPY:
+                    {
+                        char *path = multirom_list_backups();
+                        if(path)
+                        {
+                            multirom_activate_backup(path, ((chosen_item == ITEM_MULTIROM_ACTIVATE_MOVE) ? 0 : 1));
+                            free(path);
+                        }
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                switch (chosen_item)
+                {
+                    case ITEM_MULTIROM_DEACTIVATE_MOVE: multirom_deactivate_backup(0); break;
+                    case ITEM_MULTIROM_BACKUP:          multirom_deactivate_backup(1); break;
+                    case ITEM_MULTIROM_ERASE:
+                    {
+                        run_script("\nErase current ROM?",
+                                   "\nErasing: ",
+                                   "rm -r /sd-ext/multirom/rom && sync",
+                                   "\nUnable to erase\n(%s)\n",
+                                   "\nOops... something went wrong!\nPlease check the recovery log!\n\n",
+                                   "\nROM erased.\n\n",
+                                   "\nAborted!\n\n");
+                        break;
+                    }
+                }
+            }
+
+            // if we didn't return from this function to reboot, show
+            // the menu again.
+
+            DIR *rom_dir = opendir("/sd-ext/multirom/rom");
+            if(rom_dir)
+            {
+                active = 1;
+                closedir(rom_dir);
+            }
+            else
+                active = 0;
+            ui_start_menu(headers, active == 1 ? items_enabled : items_disabled);
+            selected = 0;
+            chosen_item = -1;
+
+            finish_recovery(NULL);
+            ui_reset_progress();
+
+            // throw away keys pressed while the command was running,
+            // so user doesn't accidentally trigger menu items.
+            ui_clear_key_queue();
+        }
+    }
+}
 
 static void
 prompt_and_wait()
@@ -1943,9 +2079,10 @@ prompt_and_wait()
 #define ITEM_FLASH         3
 #define ITEM_WIPE          4
 #define ITEM_PARTITION     5
-#define ITEM_MOUNT	   6
+#define ITEM_MOUNT         6
 #define ITEM_OTHER         7
-#define ITEM_POWEROFF      8
+#define ITEM_MULTIROM      8
+#define ITEM_POWEROFF      9
 
 
     static char* items[] = { "- Reboot system now",
@@ -1955,7 +2092,8 @@ prompt_and_wait()
                              "- Wipe",
                              "- Partition sdcard",
                              "- Mounts",
-			     "- Other",
+                             "- Other",
+                             "- MultiROM options",
                              "- Power off",
                              NULL };
 
@@ -2001,11 +2139,11 @@ prompt_and_wait()
                     show_menu_usb();	
                     break;  
 
-		case ITEM_BR:
+                case ITEM_BR:
                     show_menu_br();
                     break;
 
-		case ITEM_FLASH:
+                case ITEM_FLASH:
                     show_menu_flash();
                     break;
 
@@ -2017,25 +2155,27 @@ prompt_and_wait()
                     show_menu_partition();
                     break;
 
-		case ITEM_MOUNT:
-			show_menu_mount();
-			break;
+                case ITEM_MOUNT:
+                    show_menu_mount();
+                    break;
 
-		case ITEM_OTHER:
+                case ITEM_OTHER:
                     show_menu_other();
-        	    break; 
+                    break;
 
-	        case ITEM_POWEROFF:
-			run_script("\nPower off phone?",
-				   "\nShutting down : ",
-				   "/sbin/reboot -p",
-				   "\nUnable to power off phone!\n(%s)\n",
-				   "\nOops... something went wrong!\nPlease check the recovery log!\n\n",
-				   "\nPower off complete!\n\n",
-				   "\nPower off aborted!\n\n");
-			break;
+                case ITEM_MULTIROM:
+                    show_menu_multirom();
+                    break;
 
-          
+                case ITEM_POWEROFF:
+                    run_script("\nPower off phone?",
+                        "\nShutting down : ",
+                        "/sbin/reboot -p",
+                        "\nUnable to power off phone!\n(%s)\n",
+                        "\nOops... something went wrong!\nPlease check the recovery log!\n\n",
+                        "\nPower off complete!\n\n",
+                        "\nPower off aborted!\n\n");
+                    break;
             }
 
             // if we didn't return from this function to reboot, show

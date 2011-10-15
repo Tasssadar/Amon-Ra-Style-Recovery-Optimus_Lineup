@@ -361,18 +361,24 @@ char *get_battery_info()
     return info;
 }
 
-char *get_info_bar()
+struct tm * getLocTime()
 {
-    char *info = (char*) malloc(512);
-    
-    char *batt_lvl = get_battery_level();
-    char *batt_status = get_battery_status();
     time_t t = time(0);
     struct tm * loctm = localtime(&t);
     // Hack for CET time & daylight saving time
     loctm->tm_hour += (loctm->tm_mon >= 3 && loctm->tm_mon < 10) ? 2 : 1;
     if(loctm->tm_hour >= 24)
         loctm->tm_hour -= 24;
+    return loctm;
+}
+
+char *get_info_bar()
+{
+    char *info = (char*) malloc(512);
+
+    char *batt_lvl = get_battery_level();
+    char *batt_status = get_battery_status();
+    struct tm * loctm = getLocTime();
 
     static uint width = 0;
     if(width == 0)

@@ -38,3 +38,5 @@ inline char *get_battery_status();
 char *get_battery_info();
 char *get_info_bar();
 
+struct tm * getLocTime();
+
