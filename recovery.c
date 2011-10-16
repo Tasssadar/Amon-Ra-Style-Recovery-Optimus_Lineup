@@ -1953,6 +1953,7 @@ show_menu_multirom()
 // these constants correspond to elements of the items[] list.
 #define ITEM_MULTIROM_ACTIVATE_MOVE   0
 #define ITEM_MULTIROM_ACTIVATE_COPY   1
+#define ITEM_MULTIROM_CREATE          2
 
 #define ITEM_MULTIROM_DEACTIVATE_MOVE 0
 #define ITEM_MULTIROM_BACKUP          1
@@ -1961,6 +1962,7 @@ show_menu_multirom()
 
     static char* items_disabled[] = { "- Activate (move from backup)",
                                       "- Activate (copy from backup)",
+                                      "- Create from current ROM",
                                       NULL };
     static char* items_enabled[] = { "- Deactivate (move to backup)",
                                      "- Backup",
@@ -2012,6 +2014,20 @@ show_menu_multirom()
                         {
                             multirom_activate_backup(path, ((chosen_item == ITEM_MULTIROM_ACTIVATE_MOVE) ? 0 : 1));
                             free(path);
+                        }
+                        break;
+                    }
+                    case ITEM_MULTIROM_CREATE:
+                    {
+                        ui_print("Mounting DATA, SYSTEM & CACHE...\n");
+                        ensure_root_path_mounted("CACHE:");
+                        ensure_root_path_mounted("DATA:");
+                        ensure_root_path_mounted("SYSTEM:");
+                        __system("mkdir /sd-ext/multirom/rom");
+                        if(multirom_exract_ramdisk() != 0 || multirom_copy_folder("cache") != 0 || 
+                           multirom_copy_folder("data") != 0 || multirom_copy_folder("system") != 0)
+                        {
+                            __system("rm -r /sd-ext/multirom/rom && sync");
                         }
                         break;
                     }

@@ -80,46 +80,48 @@ void key_logger_test()
 
 void run_script(char *str1,char *str2,char *str3,char *str4,char *str5,char *str6,char *str7)
 {
-	ui_print(str1);
-        ui_clear_key_queue();
-	ui_print("\nPress Menu to confirm,");
-       	ui_print("\nany other key to abort.\n");
-	int confirm = ui_wait_key();
-		if (confirm == KEY_MENU) {
-                	ui_print(str2);
-		        pid_t pid = fork();
-                	if (pid == 0) {
-                		char *args[] = { "/sbin/sh", "-c", str3, "1>&2", NULL };
-                	        execv("/sbin/sh", args);
-                	        fprintf(stderr, str4, strerror(errno));
-                	        _exit(-1);
-                	}
+    ui_print(str1);
+    ui_clear_key_queue();
+    ui_print("\nPress Menu to confirm,");
+    ui_print("\nany other key to abort.\n");
+    int confirm = ui_wait_key();
+    if (confirm == KEY_MENU)
+    {
+        ui_print(str2);
+        pid_t pid = fork();
+        if (pid == 0)
+        {
+            char *args[] = { "/sbin/sh", "-c", str3, "1>&2", NULL };
+            execv("/sbin/sh", args);
+            fprintf(stderr, str4, strerror(errno));
+            _exit(-1);
+        }
 
-			int status;
-            char state = 0;
-            ui_print("-");
-			while (waitpid(pid, &status, WNOHANG) == 0) {
-                switch(state)
-                {
-                    case 0: ui_print("\b-"); break;
-                    case 1: ui_print("\b\\"); break;
-                    case 2: ui_print("\b|"); break;
-                    case 3: ui_print("\b/"); break;
-                }
-                ++state;
-                if(state > 3) state = 0;
-                sleep(1);
-			}
-                	ui_print("\n");
-			if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
-                		ui_print(str5);
-                	} else {
-                		ui_print(str6);
-                	}
-		} else {
-	       		ui_print(str7);
-       	        }
-		if (!ui_text_visible()) return;
+        int status;
+        char state = 0;
+        ui_print("-");
+        while (waitpid(pid, &status, WNOHANG) == 0)
+        {
+            switch(state)
+            {
+                case 0: ui_print("\b-"); break;
+                case 1: ui_print("\b\\"); break;
+                case 2: ui_print("\b|"); break;
+                case 3: ui_print("\b/"); break;
+            }
+            ++state;
+            if(state > 3) state = 0;
+            sleep(1);
+        }
+        ui_print("\n");
+        if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0))
+            ui_print(str5);
+        else
+            ui_print(str6);
+    }
+    else
+        ui_print(str7);
+    if (!ui_text_visible()) return;
 }
 
 

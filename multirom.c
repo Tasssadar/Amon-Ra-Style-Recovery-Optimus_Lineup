@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <linux/input.h>
+#include <sys/wait.h>
 
 #include "common.h"
 #include "multirom.h"
@@ -125,4 +126,109 @@ char *multirom_list_backups()
         }
     }
     return NULL;
+}
+
+char multirom_exract_ramdisk()
+{
+    ui_print("Dumping boot img...\n");
+    if(__system("dump_image boot /tmp/boot.img") != 0)
+    {
+        ui_print("Could not dump boot.img!\n");
+        return -1;
+    }
+
+    FILE *boot_img = fopen("/tmp/boot.img", "r");
+    FILE *ramdisk = fopen("/tmp/rd.cpio.gz", "w");
+    if(!boot_img || !ramdisk)
+    {
+        ui_print("Could not open boot.img or ramdisk!\n");
+        return -1;
+    }
+
+    // load needed ints
+    struct boot_img_hdr header;
+    unsigned *start = &header.kernel_size;
+    fseek(boot_img, BOOT_MAGIC_SIZE, SEEK_SET); 
+    fread(start, 4, 8, boot_img);
+
+    // get ramdisk offset
+    unsigned int ramdisk_pos = (1 + ((header.kernel_size + header.page_size - 1) / header.page_size))*2048;
+    ui_print("Ramdisk addr %u\nRamdisk size %u\n", ramdisk_pos, header.ramdisk_size);
+
+    // get ramdisk!
+    char *buffer = (char*) malloc(header.ramdisk_size);
+    fseek(boot_img, ramdisk_pos, SEEK_SET);
+    fread(buffer, 1, header.ramdisk_size, boot_img);
+    fwrite(buffer, 1, header.ramdisk_size, ramdisk);
+    fflush(ramdisk);
+    fclose(boot_img);
+    fclose(ramdisk);
+    free(buffer);
+
+    // extact it...
+    ui_print("Extracting init files...\n");
+    if(__system("mkdir -p /tmp/boot && cd /tmp/boot && gzip -d -c /tmp/rd.cpio.gz | busybox_cpio cpio -i") != 0)
+    {
+        __system("rm -r /tmp/boot");
+        ui_print("Failed to extract boot image!\n");
+        return -1;
+    }
+
+    // copy our files
+    __system("mkdir /sd-ext/multirom/rom/boot");
+    __system("cp /tmp/boot/*.rc /sd-ext/multirom/rom/boot/");
+    __system("cp /tmp/boot/init /sd-ext/multirom/rom/boot/");
+    sync();
+    
+    // and delete temp files
+    __system("rm -r /tmp/boot");
+    __system("rm /tmp/boot.img");
+    __system("rm /tmp/rd.cpio.gz");
+    return 0;
+}
+
+char multirom_copy_folder(char *folder)
+{
+    ui_print("Copying folder /%s... ", folder);
+
+    char cmd[100];
+    sprintf(cmd, "mkdir /sd-ext/multirom/rom/%s", folder);
+    __system(cmd);
+
+    sprintf(cmd, "cp -r -p /%s/* /sd-ext/multirom/rom/%s/", folder, folder);
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        char *args[] = { "/sbin/sh", "-c", cmd, "1>&2", NULL };
+        execv("/sbin/sh", args);
+        _exit(-1);
+    }
+
+    int status;
+    char state = 0;
+    ui_print("-");
+    while (waitpid(pid, &status, WNOHANG) == 0)
+    {
+        switch(state)
+        {
+            case 0: ui_print("\b-"); break;
+            case 1: ui_print("\b\\"); break;
+            case 2: ui_print("\b|"); break;
+            case 3: ui_print("\b/"); break;
+        }
+        ++state;
+        if(state > 3) state = 0;
+        sleep(1);
+    }
+    ui_print("\b\n");
+
+    if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0))
+    {
+        ui_print("Failed to copy /%s!\n", folder);
+        return -1;
+    }
+
+    sync();
+
+    return 0;
 }
