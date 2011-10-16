@@ -177,9 +177,18 @@ char multirom_exract_ramdisk()
     // copy our files
     __system("mkdir /sd-ext/multirom/rom/boot");
     __system("cp /tmp/boot/*.rc /sd-ext/multirom/rom/boot/");
-    __system("cp /tmp/boot/init /sd-ext/multirom/rom/boot/");
+    FILE *init_f = fopen("/tmp/boot/main_init", "r");
+    if(init_f)
+    {
+        fclose(init_f);
+        __system("cp /tmp/boot/main_init /sd-ext/multirom/rom/boot/init");
+    }
+    else __system("cp /tmp/boot/init /sd-ext/multirom/rom/boot/init");
+
+    __system("rm /sd-ext/multirom/rom/boot/preinit.rc");
+
     sync();
-    
+
     // and delete temp files
     __system("rm -r /tmp/boot");
     __system("rm /tmp/boot.img");
