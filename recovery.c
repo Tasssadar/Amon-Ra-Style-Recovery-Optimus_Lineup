@@ -1958,6 +1958,7 @@ show_menu_multirom()
 #define ITEM_MULTIROM_DEACTIVATE_MOVE 0
 #define ITEM_MULTIROM_BACKUP          1
 #define ITEM_MULTIROM_ERASE           2
+#define ITEM_MULTIROM_COPY_MODULES    3
 
 
     static char* items_disabled[] = { "- Activate (move from backup)",
@@ -1967,6 +1968,7 @@ show_menu_multirom()
     static char* items_enabled[] = { "- Deactivate (move to backup)",
                                      "- Backup",
                                      "- Erase current ROM",
+                                     "- Copy modules from int mem",
                                       NULL };
 
     ui_start_menu(headers, active == 1 ? items_enabled : items_disabled);
@@ -2048,6 +2050,14 @@ show_menu_multirom()
                                    "\nOops... something went wrong!\nPlease check the recovery log!\n\n",
                                    "\nROM erased.\n\n",
                                    "\nAborted!\n\n");
+                        break;
+                    }
+                    case ITEM_MULTIROM_COPY_MODULES:
+                    {
+                        ui_print("Mounting SYSTEM...\n");
+                        ensure_root_path_mounted("SYSTEM:");
+                        ui_print("Copying modules...\n");
+                        __system("cp /system/lib/modules/* /sd-ext/multirom/rom/system/lib/modules/ && sync");
                         break;
                     }
                 }
