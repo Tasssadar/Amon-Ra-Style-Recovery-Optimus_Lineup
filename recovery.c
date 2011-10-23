@@ -1927,6 +1927,7 @@ show_menu_multirom()
 #define ITEM_MULTIROM_BACKUP          1
 #define ITEM_MULTIROM_ERASE           2
 #define ITEM_MULTIROM_COPY_MODULES    3
+#define ITEM_MULTIROM_FLASH_ZIP       4
 
 
     static char* items_disabled[] = { "- Activate (move from backup)",
@@ -1937,6 +1938,7 @@ show_menu_multirom()
                                      "- Backup",
                                      "- Erase current ROM",
                                      "- Copy modules from int mem",
+                                     "- Flash ZIP - DONT USE FOR ROMS",
                                       NULL };
 
     ui_start_menu(headers, active == 1 ? items_enabled : items_disabled);
@@ -2026,6 +2028,21 @@ show_menu_multirom()
                         ensure_root_path_mounted("SYSTEM:");
                         ui_print("Copying modules...\n");
                         __system("cp /system/lib/modules/* /sd-ext/multirom/rom/system/lib/modules/ && sync");
+                        break;
+                    }
+                    case ITEM_MULTIROM_FLASH_ZIP:
+                    {
+                        if(multirom_backup_boot_image(0) != 0)
+                            break;
+
+                        ensure_root_path_unmounted("SYSTEM:");
+                        ensure_root_path_unmounted("DATA:");
+                        multirom_change_mountpoints(1);
+                        show_choose_zip_menu();
+                        ensure_root_path_unmounted("SYSTEM:");
+                        ensure_root_path_unmounted("DATA:");
+                        multirom_change_mountpoints(0);
+                        multirom_backup_boot_image(1);
                         break;
                     }
                 }

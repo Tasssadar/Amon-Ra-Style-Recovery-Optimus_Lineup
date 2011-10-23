@@ -1,6 +1,8 @@
 #ifndef MULTIROM_H
 #define MULTIROM_H
 
+#include "roots.h"
+
 #define MULTIROM_BACKUPS_MAX 128
 
 void multirom_deactivate_backup(unsigned char copy);
@@ -8,6 +10,9 @@ void multirom_activate_backup(char *path, unsigned char copy);
 char *multirom_list_backups();
 char multirom_exract_ramdisk();
 char multirom_copy_folder(char *folder);
+void multirom_change_mountpoints(char apply);
+void __multirom_change_mountpoints_helper(RootInfo *info, char *folder, char apply);
+char multirom_backup_boot_image(char restore);
 
 // From mkbootimg/bootimg.h
 typedef struct boot_img_hdr boot_img_hdr;

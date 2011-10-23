@@ -234,3 +234,65 @@ char multirom_copy_folder(char *folder)
 
     return 0;
 }
+
+void multirom_change_mountpoints(char apply)
+{
+    if(apply)
+        __system("cp /etc/fstab /etc/fstab.back");
+    else
+        __system("cp /etc/fstab.back /etc/fstab");
+
+    RootInfo *info = get_root_info_for_path("SYSTEM:");
+    if(info)
+        __multirom_change_mountpoints_helper(info, "system", apply);
+
+    info = get_root_info_for_path("DATA:");
+    if(info)
+        __multirom_change_mountpoints_helper(info, "data", apply);
+}
+
+void __multirom_change_mountpoints_helper(RootInfo *info, char *folder, char apply)
+{
+    if(apply)
+    {
+        char *device = (char*)malloc(100);
+        sprintf(device, "/sd-ext/multirom/rom/%s", folder);
+        info->device = device;
+        info->filesystem = "auto";
+        info->filesystem_options = "bind";
+        char fstab[100];
+         sprintf(fstab, "echo \"/sd-ext/multirom/rom/%s    /%s auto  bind\" >> /etc/fstab", folder, folder);
+        __system(fstab);
+    }
+    else
+    {
+        free(info->device);
+        info->device = g_mtd_device;
+        info->filesystem = "yaffs2";
+        info->filesystem_options = NULL;
+    }
+}
+
+char multirom_backup_boot_image(char restore)
+{
+    if(restore)
+    {
+        ui_print("Restoring boot.img...\n");
+        if(__system("flash_image boot /tmp/boot-backup.img") != 0)
+        {
+            ui_print("Could not restore boot.img!\n");
+            return -1;
+        }
+    }
+    else
+    {
+        ui_print("Creating backup of boot.img...\n");
+        __system("rm /tmp/boot-backup.img");
+        if(__system("dump_image boot /tmp/boot-backup.img") != 0)
+        {
+            ui_print("Could not dump boot.img!\n");
+            return -1;
+        }
+    }
+    return 0;
+}
