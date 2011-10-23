@@ -30,22 +30,10 @@
 
 #include "extracommands.h"
 
-typedef struct {
-    const char *name;
-    const char *device;
-    const char *device2;  // If the first one doesn't work (may be NULL)
-    const char *partition_name;
-    const char *mount_point;
-    const char *filesystem;
-    const char *filesystem_options;
-} RootInfo;
-
 /* Canonical pointers.
 xxx may just want to use enums
  */
-static const char g_mtd_device[] = "@\0g_mtd_device";
-static const char g_raw[] = "@\0g_raw";
-static const char g_package_file[] = "@\0g_package_file";
+
 
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw, NULL },
