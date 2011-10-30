@@ -55,6 +55,46 @@ void multirom_activate_backup(char *path, unsigned char copy)
                "\nAborted!\n\n");
 }
 
+char *multirom_get_rom_id(char *path)
+{
+    char str[200];
+    sprintf(str, "/sd-ext/multirom/backup/%s/system/build.prop", path);
+    FILE *props = fopen(str, "r");
+    if(!props)
+        return NULL;
+
+    int tmp = 0;
+    char *find = NULL;
+    int itr;
+    strcpy(str,"");
+    while(!feof(props))
+    {
+        itr = 0;
+        while(1)
+        {
+            tmp = fgetc(props);
+
+            if(tmp == EOF || (char)tmp == '\n')
+                break;
+            if((char)tmp == ' ')
+                continue;
+
+            str[itr++] = (char)tmp;
+        }
+        str[itr] = 0; // null-terminated string
+        find = strstr(str, "ro.build.display.id=");
+        if(!find)
+            continue;
+        find += 20; // lenght of "ro.build.display.id="
+        char *result = (char*)malloc(50);
+        strcpy(result, find);
+        fclose(props);
+        return result;
+    }
+    fclose(props);
+    return NULL;
+}
+
 char *multirom_list_backups()
 {
     DIR *dir = opendir("/sd-ext/multirom/backup");
@@ -95,6 +135,13 @@ char *multirom_list_backups()
     int chosen_item = -1;
 
     ui_reset_progress();
+    char *id = multirom_get_rom_id(backups[selected]);
+    if(id)
+    {
+        ui_print("%s\n", id);
+        free(id);
+    }
+
     for (;;) {
         int key = ui_wait_key();
         int visible = ui_text_visible();
@@ -104,9 +151,21 @@ char *multirom_list_backups()
         } else if ((key == KEY_VOLUMEDOWN) && visible) {
             ++selected;
             selected = ui_menu_select(selected);
+            id = multirom_get_rom_id(backups[selected]);
+            if(id)
+            {
+                ui_print("%s\n", id);
+                free(id);
+            }
         } else if ((key == KEY_VOLUMEUP) && visible) {
             --selected;
             selected = ui_menu_select(selected);
+            id = multirom_get_rom_id(backups[selected]);
+            if(id)
+            {
+                ui_print("%s\n", id);
+                free(id);
+            }
         } else if ((key == KEY_MENU) && visible ) {
             chosen_item = selected;
         }
