@@ -2043,6 +2043,8 @@ show_menu_multirom()
                         ensure_root_path_unmounted("DATA:");
                         multirom_change_mountpoints(0);
                         multirom_backup_boot_image(1);
+                        ui_print("Running sync()...\n");
+                        sync();
                         break;
                     }
                 }
