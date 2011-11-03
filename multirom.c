@@ -55,13 +55,13 @@ void multirom_activate_backup(char *path, unsigned char copy)
                "\nAborted!\n\n");
 }
 
-char *multirom_get_rom_id(char *path)
+void multirom_print_rom_id(char *path)
 {
     char str[200];
     sprintf(str, "/sd-ext/multirom/backup/%s/system/build.prop", path);
     FILE *props = fopen(str, "r");
     if(!props)
-        return NULL;
+        return;
 
     int tmp = 0;
     char *find = NULL;
@@ -86,13 +86,11 @@ char *multirom_get_rom_id(char *path)
         if(!find)
             continue;
         find += 20; // lenght of "ro.build.display.id="
-        char *result = (char*)malloc(50);
-        strcpy(result, find);
         fclose(props);
-        return result;
+        ui_print("%s\n", find);
+        return;
     }
     fclose(props);
-    return NULL;
 }
 
 char *multirom_list_backups()
@@ -135,12 +133,7 @@ char *multirom_list_backups()
     int chosen_item = -1;
 
     ui_reset_progress();
-    char *id = multirom_get_rom_id(backups[selected]);
-    if(id)
-    {
-        ui_print("%s\n", id);
-        free(id);
-    }
+    multirom_print_rom_id(backups[selected]);
 
     for (;;) {
         int key = ui_wait_key();
@@ -151,21 +144,11 @@ char *multirom_list_backups()
         } else if ((key == KEY_VOLUMEDOWN) && visible) {
             ++selected;
             selected = ui_menu_select(selected);
-            id = multirom_get_rom_id(backups[selected]);
-            if(id)
-            {
-                ui_print("%s\n", id);
-                free(id);
-            }
+            multirom_print_rom_id(backups[selected]);
         } else if ((key == KEY_VOLUMEUP) && visible) {
             --selected;
             selected = ui_menu_select(selected);
-            id = multirom_get_rom_id(backups[selected]);
-            if(id)
-            {
-                ui_print("%s\n", id);
-                free(id);
-            }
+            multirom_print_rom_id(backups[selected]);
         } else if ((key == KEY_MENU) && visible ) {
             chosen_item = selected;
         }
@@ -236,6 +219,9 @@ char multirom_exract_ramdisk()
     // copy our files
     __system("mkdir /sd-ext/multirom/rom/boot");
     __system("cp /tmp/boot/*.rc /sd-ext/multirom/rom/boot/");
+    __system("cp /tmp/boot/sbin/adbd /sd-ext/multirom/rom/boot/");
+    __system("cp /tmp/boot/default.prop /sd-ext/multirom/rom/boot/");
+
     FILE *init_f = fopen("/tmp/boot/main_init", "r");
     if(init_f)
     {
@@ -263,7 +249,7 @@ char multirom_copy_folder(char *folder)
     sprintf(cmd, "mkdir /sd-ext/multirom/rom/%s", folder);
     __system(cmd);
 
-    sprintf(cmd, "cp -r -p /%s/* /sd-ext/multirom/rom/%s/", folder, folder);
+    sprintf(cmd, "cp -r -p /%s/* /sd-ext/multirom/rom/%s/ && sync", folder, folder);
     pid_t pid = fork();
     if (pid == 0)
     {
@@ -295,8 +281,6 @@ char multirom_copy_folder(char *folder)
         ui_print("Failed to copy /%s!\n", folder);
         return -1;
     }
-
-    sync();
 
     return 0;
 }
