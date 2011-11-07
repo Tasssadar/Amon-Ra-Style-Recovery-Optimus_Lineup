@@ -191,6 +191,10 @@ get_args(int *argc, char ***argv) {
             LOGI("Got arguments from boot message\n");
         } else if (boot.recovery[0] != 0 && boot.recovery[0] != 255) {
             LOGW("Bad boot message\n\"%.20s\"\n", boot.recovery);
+#ifdef LGE_RESET_BOOTMODE
+	    lge_direct_mtd_access("6");
+	    LOGW("LGE FACT_RESET_6 SET");
+#endif
         }
     }
 
@@ -2290,12 +2294,19 @@ show_menu_developer()
 #define ITEM_DEV_RB_BOOT 3
 #define ITEM_DEV_RB_REC 4
 
+#ifdef LGE_RESET_BOOTMODE
+#define ITEM_DEV_RESET_LGE_BM 5
+#endif
+
     static char* items[] = { "- Make and flash boot from zimage",
-                 "- Install su & superuser",
-                 "- Install eng (unguarded) su",
-                 "- Reboot to bootloader",
-                 "- Reboot recovery",
-                                NULL };
+			     "- Install su & superuser",
+			     "- Install eng (unguarded) su",
+			     "- Reboot to bootloader",
+			     "- Reboot recovery",
+#ifdef LGE_RESET_BOOTMODE
+			     "- Reset LGE boot mode",
+#endif	
+                             	NULL };
 
     ui_start_menu(headers, items);
     int selected = 0;
@@ -2346,7 +2357,6 @@ show_menu_developer()
                 if (!ui_text_visible()) return;
 
             break;
-
         case ITEM_DEV_SU:
             ui_clear_key_queue();
             ui_print("\nInstall or fix su & superuser?");
@@ -2361,7 +2371,15 @@ show_menu_developer()
                 if (!ui_text_visible()) return;
 
             break;
+		case ITEM_DEV_RB_BOOT:
+				rb_bootloader();
+			break;
 
+#ifdef LGE_RESET_BOOTMODE
+		case ITEM_DEV_RESET_LGE_BM:
+				lge_direct_mtd_access("6");
+			break;
+#endif
         case ITEM_DEV_SU_ENG:
             ui_clear_key_queue();
             ui_print("\nInstall eng (unguarded) su?");
