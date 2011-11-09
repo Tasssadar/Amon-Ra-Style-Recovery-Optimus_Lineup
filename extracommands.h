@@ -59,7 +59,7 @@ int
 delete_file(const char* file);
 
 void
-install_su(int eng_su);
+install_su(char eng_su);
 
 void
 rb_bootloader();

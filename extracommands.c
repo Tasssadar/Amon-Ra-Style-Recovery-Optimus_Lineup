@@ -385,53 +385,53 @@ if (0 == (copy_file("/sdcard/mkboot/zImage/zImage", "/tmp/mkboot/zImage"))) {
 delete_file("/tmp/mkboot");
 }
 
-void install_su(int eng_su)
+void install_su(char eng_su)
 {
 
-ui_print("Working ......\n");
-ensure_root_path_mounted("SYSTEM:");
-ensure_root_path_mounted("DATA:");
-ensure_root_path_mounted("CACHE:");
+    ui_print("Working ......\n");
+    ensure_root_path_mounted("SYSTEM:");
+    ensure_root_path_mounted("DATA:");
+    ensure_root_path_mounted("CACHE:");
 
-struct stat sd;
-        if (0 == stat("/dev/block/mmcblk1p2", &sd)) {
-ensure_root_path_mounted("SDEXT:");
-__system("rm /sd-ext/dalvik-cache/*com.noshufou.android.su*classes.dex");
-__system("rm -rf /sd-ext/data/com.noshufou.android.su");
-__system("rm /sd-ext/app/com.noshufou.android.su*.apk");
-__system("rm /sd-ext/dalvik-cache/*uperuser*classes.dex");
-ensure_root_path_unmounted("SDEXT:");
-}
+    struct stat sd;
+    if (stat("/dev/block/mmcblk1p2", &sd) == 0) {
+        ensure_root_path_mounted("SDEXT:");
+        __system("rm /sd-ext/dalvik-cache/*com.noshufou.android.su*classes.dex");
+        __system("rm -rf /sd-ext/data/com.noshufou.android.su");
+        __system("rm /sd-ext/app/com.noshufou.android.su*.apk");
+        __system("rm /sd-ext/dalvik-cache/*uperuser*classes.dex");
+        ensure_root_path_unmounted("SDEXT:");
+    }
 
-__system("rm -rf /data/data/com.noshufou.android.su");
-__system("rm /data/app/com.noshufou.android.su*.apk");
-__system("rm /data/dalvik-cache/*com.noshufou.android.su*classes.dex");
-__system("rm /data/dalvik-cache/*uperuser*classes.dex");
+    __system("rm -rf /data/data/com.noshufou.android.su");
+    __system("rm /data/app/com.noshufou.android.su*.apk");
+    __system("rm /data/dalvik-cache/*com.noshufou.android.su*classes.dex");
+    __system("rm /data/dalvik-cache/*uperuser*classes.dex");
 
-__system("rm /cache/dalvik-cache/*com.noshufou.android.su*classes.dex");
-__system("rm /cache/dalvik-cache/*uperuser*classes.dex");
+    __system("rm /cache/dalvik-cache/*com.noshufou.android.su*classes.dex");
+    __system("rm /cache/dalvik-cache/*uperuser*classes.dex");
 
-__system("rm /system/app/*uperuser.apk");
+    __system("rm /system/app/*uperuser.apk");
 
-if ((0 == (check_file_exists("/system/bin/su"))) || (0 == (check_file_exists("/system/xbin/su"))) ){
-	ui_print("Removing old su\n");
-}
-delete_file("/system/bin/su");
-__system("rm /system/xbin/su");
-if (!eng_su) {
-	copy_file("/extra/su", "/system/bin/su");
-	copy_file("/extra/Superuser.apk", "/system/app/Superuser.apk");
-	__system("chmod 0644 /system/app/Superuser.apk");
-} else {
-	copy_file("/extra/suhack", "/system/bin/su");
-}
-__system("mkdir -p /system/xbin");
-__system("chmod 06755 /system/bin/su");
-__system("ln -s /system/bin/su /system/xbin/su");
-ensure_root_path_unmounted("DATA:");
-ensure_root_path_unmounted("SYSTEM:");
-ensure_root_path_unmounted("CACHE:");
-ui_print("su install complete\n\n");
+    if ((0 == (check_file_exists("/system/bin/su"))) || (0 == (check_file_exists("/system/xbin/su"))) ){
+        ui_print("Removing old su\n");
+    }
+    delete_file("/system/bin/su");
+    __system("rm /system/xbin/su");
+    if (!eng_su) {
+        copy_file("/extra/su", "/system/bin/su");
+        copy_file("/extra/Superuser.apk", "/system/app/Superuser.apk");
+        __system("chmod 0644 /system/app/Superuser.apk");
+    } else {
+        copy_file("/extra/suhack", "/system/bin/su");
+    }
+    __system("mkdir -p /system/xbin");
+    __system("chmod 06755 /system/bin/su");
+    __system("ln -s /system/bin/su /system/xbin/su");
+    ensure_root_path_unmounted("DATA:");
+    ensure_root_path_unmounted("SYSTEM:");
+    ensure_root_path_unmounted("CACHE:");
+    ui_print("su install complete\n\n");
 }
 
 int delete_file(const char* file)

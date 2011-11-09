@@ -2352,10 +2352,6 @@ show_menu_developer()
                 if (!ui_text_visible()) return;
 
             break;
-		case ITEM_DEV_RB_BOOT:
-				rb_bootloader();
-			break;
-
 #ifdef LGE_RESET_BOOTMODE
 		case ITEM_DEV_RESET_LGE_BM:
 				lge_direct_mtd_access("6");
