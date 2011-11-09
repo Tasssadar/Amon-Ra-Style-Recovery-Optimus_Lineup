@@ -2399,12 +2399,6 @@ show_menu_developer()
                 rb_recovery();
             break;
 
-        case ITEM_DEV_RB_BOOT:
-                rb_bootloader();
-
-
-            break;
-
             }
 // if we didn't return from this function to reboot, show
             // the menu again.
