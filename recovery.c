@@ -2452,6 +2452,7 @@ show_menu_multirom()
 #define ITEM_MULTIROM_ERASE           2
 #define ITEM_MULTIROM_COPY_MODULES    3
 #define ITEM_MULTIROM_FLASH_ZIP       4
+#define ITEM_MULTIROM_FIX_PERMISSIONS 5
 
 
     static char* items_disabled[] = { "- Activate (move from backup)",
@@ -2463,6 +2464,7 @@ show_menu_multirom()
                                      "- Erase current ROM",
                                      "- Copy modules from int mem",
                                      "- Flash ZIP - DONT USE FOR ROMS",
+                                     "- Fix permissions",
                                       NULL };
 
     ui_start_menu(headers, active == 1 ? items_enabled : items_disabled);
@@ -2569,6 +2571,21 @@ show_menu_multirom()
                         multirom_backup_boot_image(1);
                         ui_print("Running sync()...\n");
                         sync();
+                        break;
+                    }
+                    case ITEM_MULTIROM_FIX_PERMISSIONS:
+                    {
+                        ensure_root_path_unmounted("SYSTEM:");
+                        ensure_root_path_unmounted("DATA:");
+                        multirom_change_mountpoints(1);
+                        ensure_root_path_mounted("SYSTEM:");
+                        ensure_root_path_mounted("DATA:");
+                        ui_print("Fixing permissions...\n");
+                        __system("/sbin/fix_permissions");
+                        ui_print("Done!\n");
+                        ensure_root_path_unmounted("SYSTEM:");
+                        ensure_root_path_unmounted("DATA:");
+                        multirom_change_mountpoints(0);
                         break;
                     }
                 }
