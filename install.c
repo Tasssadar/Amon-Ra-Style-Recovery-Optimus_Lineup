@@ -395,54 +395,54 @@ exit:
 static int
 handle_update_package(const char *path, ZipArchive *zip)
 {
-  /*  if (signature_check_enabled) 
-	{
-		
-		//RSAPublicKey loadedKeys == keys;
-		// List of public keys 
-	    static const RSAPublicKey keys[] = {
-	        #include "keys.inc"
-	    };
-		
+    if (signature_check_enabled)
+    {
+    
+        //RSAPublicKey loadedKeys == keys;
+        // List of public keys
+        //static const RSAPublicKey keys[] = {
+        //    #include "keys.inc"
+        //};
+    
 
-		int numKeys;
-		RSAPublicKey* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
-		if (loadedKeys == NULL) {
-			LOGE("Failed to load keys\n");
-			return INSTALL_CORRUPT;
-		}
-		LOGI("%d key(s) loaded from %s\n", numKeys, PUBLIC_KEYS_FILE);
+        int numKeys;
+        RSAPublicKey* loadedKeys = load_keys(PUBLIC_KEYS_FILE, &numKeys);
+        if (loadedKeys == NULL) {
+            LOGE("Failed to load keys\n");
+            return INSTALL_CORRUPT;
+        }
+        LOGI("%d key(s) loaded from %s\n", numKeys, PUBLIC_KEYS_FILE);
 
 
-	    if (loadedKeys == NULL) {
-			LOGE("Failed to load keys\n");
-			return INSTALL_CORRUPT;
-		}
-	
+        if (loadedKeys == NULL) {
+            LOGE("Failed to load keys\n");
+            return INSTALL_CORRUPT;
+        }
+    
 
-	    // Give verification half the progress bar...
+        // Give verification half the progress bar...
         ui_print("Verifying update package...\n");
         ui_show_progress(
             VERIFICATION_PROGRESS_FRACTION,
             VERIFICATION_PROGRESS_TIME);
         int err;
-        err=verify_jar_signature(zip, keys, sizeof(keys) / sizeof(keys[0]));
+        //err=verify_jar_signature(zip, keys, sizeof(keys) / sizeof(keys[0]));
         //free(keys);
-	    
-        // Verify zip	
-	    err=verify_jar_signature(zip,  loadedKeys, numKeys);
-	    free(loadedKeys);
+    
+        // Verify zip    
+        err=verify_jar_signature(zip,  loadedKeys, numKeys);
+        free(loadedKeys);
 
         if (!err)
-		{
+        {
             LOGE("Verification failed\n");
 
             ui_print("\nZip verification failed!");
             ui_print("\nZip isn't signed correctly!");
 
             return INSTALL_CORRUPT;
-		}
-    }*/
+        }
+    }
     // Update should take the rest of the progress bar.
     ui_print("Installing update...\n");
 
