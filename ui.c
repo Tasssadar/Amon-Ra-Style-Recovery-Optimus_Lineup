@@ -54,6 +54,8 @@ static gr_surface gProgressBarIndeterminate[PROGRESSBAR_INDETERMINATE_STATES];
 static gr_surface gProgressBarEmpty[NUM_SIDES];
 static gr_surface gProgressBarFill[NUM_SIDES];
 
+pthread_mutex_t *gOutputFileRemove = NULL;
+
 static const struct { gr_surface* surface; const char *name; } BITMAPS[] = {
     
     { &gBackgroundIcon[BACKGROUND_ICON_INSTALLING], "icon_installing" },
@@ -401,14 +403,15 @@ static void *output_file_thread(void *cookie)
     FILE *out = NULL;
     int itr = 0;
     char buff[10000];
+    pthread_mutex_init(gOutputFileRemove, NULL);
     while(1)
     {      
-        pthread_mutex_lock(&gOutputFileRemove);
+        pthread_mutex_lock(gOutputFileRemove);
         out = fopen("/tmp/output.txt", "r");
         if(!out)
         {
             itr = 0;
-            pthread_mutex_unlock(&gOutputFileRemove);
+            pthread_mutex_unlock(gOutputFileRemove);
             usleep(50000);
             continue;
         }
@@ -417,16 +420,17 @@ static void *output_file_thread(void *cookie)
         {
             itr = ftell(out);
             fclose(out);
-            pthread_mutex_unlock(&gOutputFileRemove);
+            pthread_mutex_unlock(gOutputFileRemove);
             ui_print(buff);
         }
         else
         {
             fclose(out);
-            pthread_mutex_unlock(&gOutputFileRemove);
+            pthread_mutex_unlock(gOutputFileRemove);
             usleep(50000);
         }
     }
+    pthread_mutex_destroy(gOutputFileRemove);
     return NULL;
 }
 

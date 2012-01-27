@@ -80,7 +80,7 @@ void ui_show_indeterminate_progress();
 // Hide and reset the progress bar.
 void ui_reset_progress();
 
-static pthread_mutex_t gOutputFileRemove = PTHREAD_MUTEX_INITIALIZER;
+extern pthread_mutex_t *gOutputFileRemove;
 
 #define LOGE(...) ui_print("E:" __VA_ARGS__)
 #define LOGW(...) fprintf(stderr, "W:" __VA_ARGS__)
