@@ -111,6 +111,10 @@ static pthread_cond_t key_queue_cond = PTHREAD_COND_INITIALIZER;
 static int key_queue[256], key_queue_len = 0;
 static volatile char key_pressed[KEY_MAX + 1];
 
+volatile char repeatThreadState = 0;
+static int keyRepeat = 0;
+static pthread_t repeatThread;
+
 // Clear the screen and draw the currently selected background icon (if any).
 // Should only be called with gUpdateMutex locked.
 static void draw_background_locked(gr_surface icon)
@@ -323,6 +327,38 @@ static void *progress_thread(void *cookie)
     return NULL;
 }
 
+static void *key_repeat_thread(void *cookie)
+{
+    char first = 1;
+    uint timer = 500;
+    int key = *((int*)cookie);
+
+    while(repeatThreadState == 1)
+    {
+        if(timer <= 20)
+        {
+            if(first)
+                first = 0;
+            else
+            {
+                pthread_mutex_lock(&key_queue_mutex);
+                key_pressed[key] = 1;
+                static const int queue_max = sizeof(key_queue) / sizeof(key_queue[0]);
+                if (key_queue_len < queue_max) {
+                    key_queue[key_queue_len++] = key;
+                    pthread_cond_signal(&key_queue_cond);
+                }
+                pthread_mutex_unlock(&key_queue_mutex);
+            }
+            timer = 100;
+        }else timer -= 20;
+        
+        usleep(20000);
+    }
+    repeatThreadState = 0;
+    return NULL;
+}
+
 // Reads input events, handles special hot keys, and adds to the key queue.
 static void *input_thread(void *cookie)
 {
@@ -368,6 +404,19 @@ static void *input_thread(void *cookie)
             // key-up), so don't record them in the key_pressed
             // table.
             key_pressed[ev.code] = ev.value;
+
+            if(ev.value == 1 && repeatThreadState == 0)
+            {
+                keyRepeat = ev.code;
+                repeatThreadState = 1;
+                pthread_create(&repeatThread, NULL, key_repeat_thread, (void*)&keyRepeat);
+            }
+            else if(ev.code == keyRepeat && repeatThreadState == 1)
+            {
+                repeatThreadState = 2;
+                pthread_join(repeatThread, NULL);
+                keyRepeat = 0;
+            }
         }
         fake_key = 0;
         const int queue_max = sizeof(key_queue) / sizeof(key_queue[0]);
