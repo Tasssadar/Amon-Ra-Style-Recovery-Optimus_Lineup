@@ -9,6 +9,12 @@
 #include "multirom.h"
 #include "extracommands.h"
 #include "minui/minui.h"
+#include "minzip/SysUtil.h"
+#include "minzip/Zip.h"
+#include "install.h"
+
+#define UPDATE_SCRIPT_PATH  "META-INF/com/google/android/"
+#define UPDATE_SCRIPT_NAME  "META-INF/com/google/android/updater-script"
 
 void multirom_deactivate_backup(unsigned char copy)
 {
@@ -287,6 +293,9 @@ char multirom_copy_folder(char *folder)
 
 void multirom_change_mountpoints(char apply)
 {
+    ensure_root_path_unmounted("SYSTEM:");
+    ensure_root_path_unmounted("DATA:");
+    
     if(apply)
         __system("cp /etc/fstab /etc/fstab.back");
     else
@@ -345,4 +354,134 @@ char multirom_backup_boot_image(char restore)
         }
     }
     return 0;
+}
+
+int multirom_prepare_zip_file(char *file)
+{
+    int ret = 0;
+
+    char cmd[256];
+    __system("rm /tmp/mr_update.zip");
+    sprintf(cmd, "cp %s /tmp/mr_update.zip", file);
+    __system(cmd);
+
+    sprintf(cmd, "mkdir -p /tmp/%s", UPDATE_SCRIPT_PATH);
+    __system(cmd);
+
+    sprintf(cmd, "/tmp/%s", UPDATE_SCRIPT_NAME);
+
+    FILE *new_script = fopen(cmd, "w");
+    if(!new_script)
+        return -1;
+
+    ZipArchive zip;
+    int err = mzOpenZipArchive("/tmp/mr_update.zip", &zip);
+    if (err != 0)
+    {
+        ret = err;
+        goto exit;
+    }
+
+    const ZipEntry *script_entry = mzFindZipEntry(&zip, UPDATE_SCRIPT_NAME);
+    if(!script_entry)
+    {
+        ret = -1;
+        goto exit;
+    }
+
+    int script_len;
+    char* script_data;
+    if (read_data(&zip, script_entry, &script_data, &script_len) < 0)
+    {
+        ret = -1;
+        goto exit;
+    }
+
+    mzCloseZipArchive(&zip);
+
+    int itr = 0;
+    char *token = strtok(script_data, "\n");
+    while(token)
+    {
+        if((!strstr(token, "mount") && !strstr(token, "format")) || !strstr(token, "MTD"))
+        {
+            fputs(token, new_script);
+            fputc('\n', new_script);
+        }
+        token = strtok(NULL, "\n");
+    }
+
+    free(script_data);
+    fclose(new_script);
+
+    sprintf(cmd, "cd /tmp && zip mr_update.zip %s", UPDATE_SCRIPT_NAME);
+    if(__system(cmd) < 0)
+        return -1;
+
+goto exit_succes;
+
+exit:
+    mzCloseZipArchive(&zip);
+    fclose(new_script);
+
+exit_succes:
+    return ret;
+}
+
+void multirom_create_from_zip(char *file)
+{
+    ui_print("Preparing ZIP file...\n");
+    if(multirom_prepare_zip_file(file) < 0)
+    {
+        ui_print("Сan't prepare ZIP file!\n");
+        return;
+    }
+
+    ui_print("Creating backup of boot image..\n");
+    if(multirom_backup_boot_image(0) != 0)
+    {
+        ui_print("Failed to backup boot image!");
+        return;
+    }
+
+    ui_print("Mounting folders...\n");
+
+    __system("mkdir -p /sd-ext/multirom/rom/system");
+    __system("mkdir -p /sd-ext/multirom/rom/cache");
+    __system("mkdir -p /sd-ext/multirom/rom/data");
+    __system("mkdir -p /sd-ext/multirom/rom/boot");
+
+    multirom_change_mountpoints(1);
+    ensure_root_path_mounted("SYSTEM:");
+    ensure_root_path_mounted("DATA:");
+
+    ui_print("Executing update package...\n");
+
+    int status = install_package("TMP:mr_update.zip");
+
+    __system("rm /tmp/mr_update.zip");
+
+    if (status != INSTALL_SUCCESS)
+    {
+        __system("rm -r /sd-ext/multirom/rom");
+
+        ui_set_background(BACKGROUND_ICON_ERROR);
+        ui_print("\nInstallation aborted.\n");
+
+        ui_print("Restoring mount points\n");
+        multirom_change_mountpoints(0);
+        return;
+    }
+    else
+        ui_print("\nInstall from sdcard complete.\n");
+
+    ui_print("Extracting boot image...\n");
+    multirom_exract_ramdisk();
+    ui_print("Restoring boot image backup..\n");
+    multirom_backup_boot_image(1);
+
+    ui_print("Restoring mount points\n");
+    multirom_change_mountpoints(0);
+
+    ui_print("Complete!\n");
 }
