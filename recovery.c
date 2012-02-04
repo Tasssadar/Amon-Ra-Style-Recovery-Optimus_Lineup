@@ -2429,6 +2429,7 @@ show_menu_multirom()
 #define ITEM_MULTIROM_ACTIVATE_MOVE   0
 #define ITEM_MULTIROM_ACTIVATE_COPY   1
 #define ITEM_MULTIROM_CREATE          2
+#define ITEM_MULTIROM_CREATE_ZIP      3
 
 #define ITEM_MULTIROM_DEACTIVATE_MOVE 0
 #define ITEM_MULTIROM_BACKUP          1
@@ -2441,6 +2442,7 @@ show_menu_multirom()
     static char* items_disabled[] = { "- Activate (move from backup)",
                                       "- Activate (copy from backup)",
                                       "- Create from current ROM",
+                                      "- Create from ZIP file",
                                       NULL };
     static char* items_enabled[] = { "- Deactivate (move to backup)",
                                      "- Backup",
@@ -2510,6 +2512,26 @@ show_menu_multirom()
                         {
                             __system("rm -r /sd-ext/multirom/rom && sync");
                         }
+                        break;
+                    }
+                    case ITEM_MULTIROM_CREATE_ZIP:
+                    {
+                        static char* headers[] = {  "Choose a zip to apply",
+                                                     UNCONFIRM_TXT,
+                                                     "",
+                                                    NULL
+                        };
+
+                        if (ensure_root_path_mounted("SDCARD:") != 0) {
+                            LOGE ("Can't mount /sdcard\n");
+                            break;
+                        }
+
+                        char* file = choose_file_menu("/sdcard/", ".zip", headers);
+                        if(file == NULL)
+                            break;
+
+                        multirom_create_from_zip(file);
                         break;
                     }
                 }

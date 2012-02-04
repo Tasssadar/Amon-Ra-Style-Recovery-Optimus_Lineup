@@ -172,6 +172,8 @@ internal_root_mounted(const RootInfo *info)
     if (info->mount_point == NULL) {
         return -1;
     }
+    if(info->device == NULL)
+        return 0;
 //xxx if TMP: (or similar) just say "yes"
 
     /* See if this root is already mounted.
