@@ -34,7 +34,6 @@
 xxx may just want to use enums
  */
 
-
 static RootInfo g_roots[] = {
     { "BOOT:", g_mtd_device, NULL, "boot", NULL, g_raw, NULL },
     { "CACHE:", g_mtd_device, NULL, "cache", "/cache", "yaffs2", NULL },
@@ -233,7 +232,7 @@ ensure_root_path_mounted(const char *root_path)
 
     /* It's not mounted.
      */
-    if (info->device == g_mtd_device) {
+    if (*info->device == '@') {
         if (info->partition_name == NULL) {
             return -1;
         }
@@ -305,7 +304,7 @@ const MtdPartition *
 get_root_mtd_partition(const char *root_path)
 {
     const RootInfo *info = get_root_info_for_path(root_path);
-    if (info == NULL || info->device != g_mtd_device ||
+    if (info == NULL || *info->device != '@' ||
             info->partition_name == NULL)
     {
         return NULL;
@@ -336,7 +335,7 @@ format_root_device(const char *root)
         LOGW("format_root_device: can't resolve \"%s\"\n", root);
         return -1;
     }
-    if (info->mount_point != NULL && info->device == g_mtd_device) {
+    if (info->mount_point != NULL && *info->device == '@') {
         /* Don't try to format a mounted device.
          */
         int ret = ensure_root_path_unmounted(root);
@@ -348,7 +347,7 @@ format_root_device(const char *root)
 
     /* Format the device.
      */
-    if (info->device == g_mtd_device) {
+    if (*info->device == '@') {
         mtd_scan_partitions();
         const MtdPartition *partition;
         partition = mtd_find_partition_by_name(info->partition_name);
