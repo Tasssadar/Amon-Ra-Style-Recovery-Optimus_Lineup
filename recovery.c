@@ -2548,7 +2548,7 @@ show_menu_multirom()
                         if(file == NULL)
                             break;
 
-                        multirom_create_from_zip(file);
+                        multirom_flash_zip(file, 1);
                         break;
                     }
                 }
@@ -2580,17 +2580,22 @@ show_menu_multirom()
                     }
                     case ITEM_MULTIROM_FLASH_ZIP:
                     {
-                        if(multirom_backup_boot_image(0) != 0)
+                        static char* headers[] = {  "Choose a zip to apply",
+                                                     UNCONFIRM_TXT,
+                                                     "",
+                                                    NULL
+                        };
+
+                        if (ensure_root_path_mounted("SDCARD:") != 0) {
+                            LOGE ("Can't mount /sdcard\n");
+                            break;
+                        }
+
+                        char* file = choose_file_menu("/sdcard/", ".zip", headers);
+                        if(file == NULL)
                             break;
 
-                        ensure_root_path_unmounted("SYSTEM:");
-                        ensure_root_path_unmounted("DATA:");
-                        multirom_change_mountpoints(1);
-                        show_choose_zip_menu();
-                        ensure_root_path_unmounted("SYSTEM:");
-                        ensure_root_path_unmounted("DATA:");
-                        multirom_change_mountpoints(0);
-                        multirom_backup_boot_image(1);
+                        multirom_flash_zip(file, 0);
                         ui_print("Running sync()...\n");
                         sync();
                         break;
