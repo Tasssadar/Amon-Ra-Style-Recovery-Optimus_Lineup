@@ -53,7 +53,7 @@ void multirom_deactivate_backup(unsigned char copy)
 void multirom_activate_backup(char *path, unsigned char copy)
 {
     char cmd[256];
-    sprintf(cmd, "%s %s /sd-ext/multirom/rom && sync", copy ? "cp -r -p" : "mv", path);
+    sprintf(cmd, "%s \"%s\" /sd-ext/multirom/rom && sync", copy ? "cp -r -p" : "mv", path);
     run_script("\nActivate backup?",
                "\nActivating backup: ",
                cmd,
@@ -314,7 +314,7 @@ int multirom_prepare_zip_file(char *file)
 
     char cmd[256];
     __system("rm /tmp/mr_update.zip");
-    sprintf(cmd, "cp %s /tmp/mr_update.zip", file);
+    sprintf(cmd, "cp \"%s\" /tmp/mr_update.zip", file);
     __system(cmd);
 
     sprintf(cmd, "mkdir -p /tmp/%s", UPDATE_SCRIPT_PATH);
@@ -380,7 +380,7 @@ exit_succes:
     return ret;
 }
 
-void multirom_create_from_zip(char *file)
+void multirom_flash_zip(char *file, char newRom)
 {
     ui_print("Preparing ZIP file...\n");
     if(multirom_prepare_zip_file(file) < 0)
@@ -389,12 +389,8 @@ void multirom_create_from_zip(char *file)
         return;
     }
 
-    ui_print("Creating backup of boot image..\n");
     if(multirom_backup_boot_image(0) != 0)
-    {
-        ui_print("Failed to backup boot image!");
         return;
-    }
 
     ui_print("Mounting folders...\n");
 
@@ -415,7 +411,8 @@ void multirom_create_from_zip(char *file)
 
     if (status != INSTALL_SUCCESS)
     {
-        __system("rm -r /sd-ext/multirom/rom");
+        if(newRom)
+            __system("rm -r /sd-ext/multirom/rom");
 
         ui_set_background(BACKGROUND_ICON_ERROR);
         ui_print("\nInstallation aborted.\n");
@@ -427,8 +424,11 @@ void multirom_create_from_zip(char *file)
     else
         ui_print("\nInstall from sdcard complete.\n");
 
-    ui_print("Extracting boot image...\n");
-    multirom_exract_ramdisk();
+    if(newRom)
+    {
+        ui_print("Extracting boot image...\n");
+        multirom_exract_ramdisk();
+    }
     ui_print("Restoring boot image backup..\n");
     multirom_backup_boot_image(1);
 
