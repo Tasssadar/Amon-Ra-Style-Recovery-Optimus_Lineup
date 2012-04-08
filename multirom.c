@@ -435,5 +435,9 @@ void multirom_flash_zip(char *file, char newRom)
     ui_print("Restoring mount points\n");
     multirom_change_mountpoints(0);
 
+    ui_print("Copying modules...\n");
+    ensure_root_path_mounted("SYSTEM:");
+    __system("cp /system/lib/modules/* /sd-ext/multirom/rom/system/lib/modules/ && sync");
+
     ui_print("Complete!\n");
 }
