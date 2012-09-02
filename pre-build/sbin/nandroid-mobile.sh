@@ -80,6 +80,7 @@ DEVICEID=foo
 RECOVERY=foo
 
 SUBNAME=""
+BACKUPFOLDERNAME=""
 NORECOVERY=0
 NOBOOT=0
 NODATA=0
@@ -182,7 +183,7 @@ esac
 ECHO=echo
 OUTPUT=""
 
-for option in $(getopt --name="nandroid-mobile v2.2.3" -l norecovery -l noboot -l nodata -l nosystem -l nocache -l nomisc -l wimax -l nosplash1 -l nosplash2 -l subname: -l backup -l restore -l compress -l getupdate -l delete -l path -l webget: -l webgettarget: -l nameserver: -l nameserver2: -l bzip2: -l defaultinput -l autoreboot -l autoapplyupdate -l ext -l android_secure -l cwmcompat -l bigdata -l save: -l switchto: -l listbackup -l listupdate -l silent -l quiet -l help -- "cbruds:p:eaql" "$@"); do
+for option in $(getopt --name="nandroid-mobile v2.2.3" -l norecovery -l noboot -l nodata -l nosystem -l nocache -l nomisc -l wimax -l nosplash1 -l nosplash2 -l subname: -l backup -l restore -l compress -l getupdate -l delete -l path -l sbfn -l webget: -l webgettarget: -l nameserver: -l nameserver2: -l bzip2: -l defaultinput -l autoreboot -l autoapplyupdate -l ext -l android_secure -l cwmcompat -l bigdata -l save: -l switchto: -l listbackup -l listupdate -l silent -l quiet -l help -- "cbruds:p:eaql" "$@"); do
     case $option in
         --silent)
             ECHO=echo2log
@@ -476,6 +477,13 @@ for option in $(getopt --name="nandroid-mobile v2.2.3" -l norecovery -l noboot -
             fi
             #$ECHO $2
             BACKUPPATH="$2"
+            shift 2
+            ;;
+        --sbfn)
+            if [ "$2" == "$option" ]; then
+                shift
+            fi
+            BACKUPFOLDERNAME="$2"
             shift 2
             ;;
         --delete)
@@ -1226,6 +1234,7 @@ if [ ! "$SUBNAME" == "" ]; then
     SUBNAME=$SUBNAME-
 fi
 
+
 # Identify the backup with what partitions have been backed up
 if [ "$NOBOOT" == 0 ]; then
     BACKUPLEGEND=$BACKUPLEGEND"B"
@@ -1278,6 +1287,10 @@ fi
 
 TIMESTAMP="`date +%Y%m%d-%H%M`"
 DESTDIR="$BACKUPPATH/$SUBNAME$BACKUPLEGEND$TIMESTAMP"
+if [ ! "$BACKUPFOLDERNAME" == "" ]; then
+    DESTDIR="$BACKUPFOLDERNAME"
+fi
+
 if [ ! -d $DESTDIR ]; then 
 	mkdir -p $DESTDIR
 	if [ ! -d $DESTDIR ]; then 

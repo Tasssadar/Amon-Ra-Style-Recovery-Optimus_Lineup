@@ -1015,7 +1015,7 @@ void free_string_array(char** array)
 }
 
 static void
-show_menu_nandroid()
+show_menu_nandroid(char *toFolder)
 {
    static char* headers[] = { "What do you want to backup?",
 			       "",
@@ -1120,8 +1120,13 @@ show_menu_nandroid()
 
             } else {
 
-	      char nandroid_command[1024];
-	      strcpy(nandroid_command, "/sbin/nandroid-mobile.sh -b --nomisc --nosplash1 --nosplash2 --defaultinput");
+	      char nandroid_command[1024] = { 0 };
+          if(toFolder)
+          {
+              ensure_root_path_mounted("SDCARD:");
+              sprintf(nandroid_command, "rm -rf \"%s/\"* ; ", toFolder);
+          }
+          strcat(nandroid_command, "/sbin/nandroid-mobile.sh -b --nomisc --nosplash1 --nosplash2 --defaultinput");
 
                 int i=0;
 		while (items[i])
@@ -1142,6 +1147,14 @@ show_menu_nandroid()
 #endif
 		    i++;	
 		}
+
+		if(toFolder)
+        {
+            char arg[300];
+            sprintf(arg, " --sbfn \"%s/\"", toFolder);
+            strcat(nandroid_command, arg);
+        }
+        
             strcat(nandroid_command, " > /tmp/output.txt");
             pthread_mutex_lock(gOutputFileRemove);
             __system("rm /tmp/output.txt");
@@ -1170,6 +1183,275 @@ show_menu_nandroid()
 
     }
 	
+}
+
+
+
+static void
+choose_folder_to_backup(const char *nandroid_folder)
+{
+    static char* headers[] = { "Choose folder to create backup",
+                   UNCONFIRM_TXT,
+                               "",
+                               NULL };
+
+    char path[PATH_MAX] = "";
+    DIR *dir;
+    struct dirent *de;
+    char **files;
+    char **list;
+    int total = 0;
+    int i;
+
+    if (ensure_root_path_mounted(nandroid_folder) != 0) {
+        LOGE("Can't mount %s\n", nandroid_folder);
+        return;
+    }
+
+    if (translate_root_path(nandroid_folder, path, sizeof(path)) == NULL) {
+        LOGE("Bad path %s", path);
+        return;
+    }
+
+    dir = opendir(path);
+    if (dir == NULL) {
+        LOGE("Couldn't open directory %s", path);
+        return;
+    }
+
+    /* count how many files we're looking at */
+    while ((de = readdir(dir)) != NULL) {
+        if (de->d_name[0] == '.') {
+            continue;
+        } else {
+            total++;
+        }
+    }
+
+    if (total==0) {
+        LOGE("No nandroid-backup files found\n");
+            if (closedir(dir) < 0) {
+          LOGE("Failure closing directory %s", path);
+              goto out;
+            }
+        return;
+    }
+
+    /* allocate the array for the file list menu */
+    files = (char **) malloc((total + 1) * sizeof(*files));
+    files[total] = NULL;
+
+    list = (char **) malloc((total + 1) * sizeof(*files));
+    list[total] = NULL;
+
+    /* set it up for the second pass */
+    rewinddir(dir);
+
+    /* put the names in the array for the menu */
+    i = 0;
+    while ((de = readdir(dir)) != NULL) {
+        if (de->d_name[0] == '.') {
+            continue;
+        } else {
+
+            files[i] = (char *) malloc(strlen(nandroid_folder) + strlen(de->d_name) + 1);
+            strcpy(files[i], nandroid_folder);
+            strcat(files[i], de->d_name);
+
+            list[i] = (char *) malloc(strlen(de->d_name) + 1);
+            strcpy(list[i], de->d_name);
+
+            i++;
+
+        }
+    }
+
+    /* close directory handle */
+    if (closedir(dir) < 0) {
+        LOGE("Failure closing directory %s", path);
+        goto out;
+    }
+
+    ui_start_menu(headers, list);
+    int selected = 0;
+    int chosen_item = -1;
+
+    finish_recovery(NULL);
+    ui_reset_progress();
+    for (;;) {
+        int key = ui_wait_key();
+        int visible = ui_text_visible();
+
+        if (key == GO_BACK) {
+            break;
+        } else if ((key == DN) && visible) {
+            ++selected;
+            selected = ui_menu_select(selected);
+        } else if ((key == UP) && visible) {
+            --selected;
+            selected = ui_menu_select(selected);
+        } else if ((key == SELECT) && visible ) {
+            chosen_item = selected;
+        }
+
+        if (chosen_item >= 0) {
+            // turn off the menu, letting ui_print() to scroll output
+            // on the screen.
+            ui_end_menu();
+            
+            ui_print("\nBackup to ");
+            ui_print(list[chosen_item]);
+            ui_clear_key_queue();
+            ui_print("?\nAll data in that folder will be erased and replaced by new backup.\n");
+            ui_print("Press %s to confirm,\nany other key to abort.\n", CONFIRM);
+            
+            int confirm_apply = ui_wait_key();
+            if (confirm_apply == SELECT)
+            {
+                char path[256];
+                strcpy(path, "/sdcard/nandroid/mem=471M/");
+                strcat(path, list[chosen_item]);
+                show_menu_nandroid(path);
+            }
+            else
+            {
+                ui_print("\nBackup aborted.\n");
+            }
+            if (!ui_text_visible()) break;
+            break;
+        }
+    }
+
+out:
+
+    for (i = 0; i < total; i++) {
+        free(files[i]);
+    free(list[i]);
+    }
+    free(files);
+    free(list);
+}
+
+static void show_menu_nandroid_folder(void)
+{
+    static char* headers[] = { "Choose Device-ID,",
+                   UNCONFIRM_TXT,
+                               "",
+                               NULL };
+
+    char path[PATH_MAX] = "";
+    DIR *dir;
+    struct dirent *de;
+    char **files;
+    char **list;
+    int total = 0;
+    int i;
+
+    if (ensure_root_path_mounted(NANDROID_PATH) != 0) {
+        LOGE("Can't mount %s\n", NANDROID_PATH);
+        return;
+    }
+
+    if (translate_root_path(NANDROID_PATH, path, sizeof(path)) == NULL) {
+        LOGE("Bad path %s", path);
+        return;
+    }
+
+    dir = opendir(path);
+    if (dir == NULL) {
+        LOGE("Couldn't open directory %s", path);
+        return;
+    }
+
+    /* count how many files we're looking at */
+    while ((de = readdir(dir)) != NULL) {
+        char *extension = strrchr(de->d_name, '.');
+        if (de->d_name[0] == '.') {
+            continue;
+        } else {
+            total++;
+        }
+    }
+
+    if (total==0) {
+        LOGE("No Device-ID folder found\n");
+            if (closedir(dir) < 0) {
+          LOGE("Failure closing directory %s", path);
+              goto out;
+            }
+        return;
+    }
+
+    /* allocate the array for the file list menu */
+    files = (char **) malloc((total + 1) * sizeof(*files));
+    files[total] = NULL;
+
+    list = (char **) malloc((total + 1) * sizeof(*files));
+    list[total] = NULL;
+
+    /* set it up for the second pass */
+    rewinddir(dir);
+
+    /* put the names in the array for the menu */
+    i = 0;
+    while ((de = readdir(dir)) != NULL) {
+        if (de->d_name[0] == '.') {
+            continue;
+        } else {
+            files[i] = (char *) malloc(NANDROID_PATH_LENGTH + strlen(de->d_name) + 1);
+            strcpy(files[i], NANDROID_PATH);
+            strcat(files[i], de->d_name);
+
+            list[i] = (char *) malloc(strlen(de->d_name) + 1);
+            strcpy(list[i], de->d_name);
+
+            i++;
+        }
+    }
+
+    /* close directory handle */
+    if (closedir(dir) < 0) {
+        LOGE("Failure closing directory %s", path);
+        goto out;
+    }
+
+    ui_start_menu(headers, list);
+    int selected = 0;
+    int chosen_item = -1;
+
+    finish_recovery(NULL);
+    ui_reset_progress();
+    for (;;) {
+        int key = ui_wait_key();
+        int visible = ui_text_visible();
+
+        if (key == GO_BACK) {
+            break;
+        } else if ((key == DN) && visible) {
+            ++selected;
+            selected = ui_menu_select(selected);
+        } else if ((key == UP) && visible) {
+            --selected;
+            selected = ui_menu_select(selected);
+        } else if ((key == SELECT) && visible ) {
+            chosen_item = selected;
+        }
+
+        if (chosen_item >= 0) {
+            choose_folder_to_backup(files[chosen_item]);
+            if (!ui_text_visible()) break;
+            break;
+        }
+    }
+
+out:
+
+    for (i = 0; i < total; i++) {
+        free(files[i]);
+        free(list[i]);
+    }
+    free(files);
+    free(list);
 }
 
 void show_choose_zip_menu()
@@ -1521,14 +1803,16 @@ show_menu_br()
 // these constants correspond to elements of the items[] list.
 #define ITEM_NANDROID_BCK  0
 #define ITEM_NANDROID_RES  1
-#define ITEM_CWM_NANDROID 2
-#define ITEM_GOOG_BCK  3
-#define ITEM_GOOG_RES  4
+#define ITEM_NANDROID_BCK_FOLDER 2
+#define ITEM_CWM_NANDROID 3
+#define ITEM_GOOG_BCK  4
+#define ITEM_GOOG_RES  5
 
 
 
     static char* items[] = { "- Nand backup",
 			     "- Nand restore",
+                 "- Nand backup to folder",
 			     "- Nand restore clockworkmod backup",
 			     "- Backup Google proprietary system files",
                              "- Restore Google proprietary system files",
@@ -1565,45 +1849,49 @@ show_menu_br()
             switch (chosen_item) {
 
                 case ITEM_NANDROID_BCK:
-		    ui_print("\n\n*** WARNING ***");
-		    ui_print("\nNandroid backups require minimum");
-		    ui_print("\n300mb SDcard space and may take a few");
-		    ui_print("\nminutes to back up!\n\n");
-		    ui_print("\nUse Other/recoverylog2sd for errors.\n\n"); 
-		    show_menu_nandroid();
+                    ui_print("\n\n*** WARNING ***");
+                    ui_print("\nNandroid backups require minimum");
+                    ui_print("\n300mb SDcard space and may take a few");
+                    ui_print("\nminutes to back up!\n\n");
+                    ui_print("\nUse Other/recoverylog2sd for errors.\n\n"); 
+                    show_menu_nandroid(NULL);
+                    break;
+
+                case ITEM_NANDROID_BCK_FOLDER:
+                    show_menu_nandroid_folder();
                     break;
 
 
                 case ITEM_NANDROID_RES:
-                    	choose_nandroid_folder();
-	                break;
+                    choose_nandroid_folder();
+                    break;
 
                 case ITEM_GOOG_BCK:
-			run_script("\nBackup Google proprietary system files?",
-				   "\nPerforming backup : ",
-				   "/sbin/backuptool.sh backup",
-				   "\nuNnable to execute backuptool.sh!\n(%s)\n",
-				   "\nOops... something went wrong!\nPlease check the recovery log!\n",
-				   "\nBackup complete!\n\n",
-				   "\nBackup aborted!\n\n");
-			break;
+                        run_script("\nBackup Google proprietary system files?",
+                                   "\nPerforming backup : ",
+                                   "/sbin/backuptool.sh backup",
+                                   "\nuNnable to execute backuptool.sh!\n(%s)\n",
+                                   "\nOops... something went wrong!\nPlease check the recovery log!\n",
+                                   "\nBackup complete!\n\n",
+                                   "\nBackup aborted!\n\n");
+                        break;
 
                 case ITEM_GOOG_RES:
-			run_script("\nRestore Google proprietary system files?",
-				   "\nPerforming restore : ",
-				   "/sbin/backuptool.sh restore",
-				   "\nuNnable to execute backuptool.sh!\n(%s)\n",
-				   "\nOops... something went wrong!\nPlease check the recovery log!\n",
-				   "\nRestore complete!\n\n",
-				   "\nRestore aborted!\n\n");
-			break;
+                        run_script("\nRestore Google proprietary system files?",
+                                   "\nPerforming restore : ",
+                                   "/sbin/backuptool.sh restore",
+                                   "\nuNnable to execute backuptool.sh!\n(%s)\n",
+                                   "\nOops... something went wrong!\nPlease check the recovery log!\n",
+                                   "\nRestore complete!\n\n",
+                                   "\nRestore aborted!\n\n");
+                        break;
 
-		case ITEM_CWM_NANDROID:
-			ui_print("\nExperimental Beta Feature\n\n");
-			make_clockwork_path();
-			choose_clockwork_file();
-			break;
-		             
+                case ITEM_CWM_NANDROID:
+                        ui_print("\nExperimental Beta Feature\n\n");
+                        make_clockwork_path();
+                        choose_clockwork_file();
+                        break;
+                             
             }
 
             // if we didn't return from this function to reboot, show
